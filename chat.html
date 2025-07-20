@@ -21,23 +21,36 @@
   <main class="max-w-3xl mx-auto p-4 mt-6">
     <h1 class="text-2xl font-bold mb-4 text-center">💬 Global Chat</h1>
 
-    <!-- Chat Display Area -->
-    <div id="chat-box" class="bg-white p-4 rounded shadow h-96 overflow-y-auto mb-4 border"></div>
+    <!-- Auth Section -->
+    <div id="auth-section" class="text-center mb-4">
+      <button id="login-btn" class="bg-green-600 text-white px-4 py-2 rounded">Sign in with Google</button>
+      <div id="user-info" class="mt-3 hidden">
+        <img id="user-pic" class="w-10 h-10 rounded-full mx-auto mb-2" />
+        <p id="user-name" class="text-green-700 font-semibold"></p>
+        <button id="logout-btn" class="mt-2 bg-red-500 text-white px-3 py-1 rounded">Logout</button>
+      </div>
+    </div>
+
+    <!-- Chat Display -->
+    <div id="chat-box" class="bg-white p-4 rounded shadow h-96 overflow-y-auto mb-4 border hidden"></div>
 
     <!-- Chat Form -->
-    <form id="chat-form" class="flex gap-2">
-      <input id="username" type="text" placeholder="Your name" required
-        class="w-1/4 p-2 border rounded" />
+    <form id="chat-form" class="flex gap-2 hidden">
       <input id="message" type="text" placeholder="Type a message..." required
         class="flex-1 p-2 border rounded" />
       <button type="submit" class="bg-green-600 text-white px-4 rounded">Send</button>
     </form>
   </main>
 
-  <!-- Firebase Chat Script -->
+  <!-- Firebase Modules -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getFirestore, collection, addDoc, query, orderBy, onSnapshot
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
@@ -50,40 +63,78 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
+
+    const loginBtn = document.getElementById("login-btn");
+    const logoutBtn = document.getElementById("logout-btn");
+    const userInfo = document.getElementById("user-info");
+    const userNameEl = document.getElementById("user-name");
+    const userPic = document.getElementById("user-pic");
 
     const chatBox = document.getElementById("chat-box");
     const chatForm = document.getElementById("chat-form");
     const messageInput = document.getElementById("message");
-    const usernameInput = document.getElementById("username");
 
-    // Listen for new chat messages
-    const q = query(collection(db, "global-chat"), orderBy("timestamp", "asc"));
-    onSnapshot(q, (snapshot) => {
-      chatBox.innerHTML = "";
-      snapshot.forEach((doc) => {
-        const msg = doc.data();
-        const div = document.createElement("div");
-        div.className = "mb-2";
-        div.innerHTML = `<span class="font-bold text-green-700">${msg.name}:</span> ${msg.text}`;
-        chatBox.appendChild(div);
-      });
-      chatBox.scrollTop = chatBox.scrollHeight;
+    let currentUser = null;
+
+    loginBtn.onclick = () => signInWithPopup(auth, provider);
+
+    logoutBtn.onclick = () => signOut(auth);
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        currentUser = user;
+        loginBtn.classList.add("hidden");
+        userInfo.classList.remove("hidden");
+        chatForm.classList.remove("hidden");
+        chatBox.classList.remove("hidden");
+        userNameEl.textContent = user.displayName;
+        userPic.src = user.photoURL;
+        loadChat();
+      } else {
+        currentUser = null;
+        loginBtn.classList.remove("hidden");
+        userInfo.classList.add("hidden");
+        chatForm.classList.add("hidden");
+        chatBox.classList.add("hidden");
+        chatBox.innerHTML = "";
+      }
     });
 
-    // Handle form submission
+    function loadChat() {
+      const q = query(collection(db, "global-chat"), orderBy("timestamp", "asc"));
+      onSnapshot(q, (snapshot) => {
+        chatBox.innerHTML = "";
+        snapshot.forEach((doc) => {
+          const msg = doc.data();
+          const div = document.createElement("div");
+          div.className = "mb-2 flex items-start gap-2";
+          div.innerHTML = `
+            <img src="${msg.photo}" class="w-8 h-8 rounded-full mt-1" />
+            <div>
+              <p class="text-sm"><span class="font-semibold text-green-700">${msg.name}:</span> ${msg.text}</p>
+            </div>
+          `;
+          chatBox.appendChild(div);
+        });
+        chatBox.scrollTop = chatBox.scrollHeight;
+      });
+    }
+
     chatForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const name = usernameInput.value.trim();
       const text = messageInput.value.trim();
+      if (!text) return;
 
-      if (name && text) {
-        await addDoc(collection(db, "global-chat"), {
-          name,
-          text,
-          timestamp: new Date()
-        });
-        messageInput.value = "";
-      }
+      await addDoc(collection(db, "global-chat"), {
+        name: currentUser.displayName,
+        photo: currentUser.photoURL,
+        text,
+        timestamp: new Date()
+      });
+
+      messageInput.value = "";
     });
   </script>
 </body>
