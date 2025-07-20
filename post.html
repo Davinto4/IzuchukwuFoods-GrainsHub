@@ -6,56 +6,43 @@
   <title>Blog Post - Izuchukwu Foods</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 text-gray-800">
+<body class="bg-gray-100 text-gray-800">
 
   <!-- Navbar -->
   <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
     <a href="index.html" class="text-xl font-bold">Izuchukwu Foods</a>
     <div class="space-x-6 text-sm font-medium">
       <a href="index.html" class="hover:underline">Home</a>
-      <a href="products.html" class="hover:underline">Products</a>
       <a href="blog.html" class="hover:underline">Blog</a>
+      <button id="loginBtn" class="bg-white text-green-700 px-3 py-1 rounded text-sm hover:bg-gray-200">Login</button>
+      <button id="logoutBtn" class="hidden bg-white text-red-600 px-3 py-1 rounded text-sm hover:bg-gray-200">Logout</button>
     </div>
   </nav>
 
-  <!-- Banner -->
-  <header class="h-56 bg-cover bg-center text-white flex items-center justify-center" style="background-image: url('images/flyer.jpg'); background-attachment: fixed;">
-    <h1 class="text-3xl font-bold bg-black bg-opacity-50 p-4 rounded">Blog Post</h1>
-  </header>
+  <!-- Blog Post Content -->
+  <div class="max-w-4xl mx-auto px-4 py-8" id="post-container"></div>
 
-  <!-- Post Section -->
-  <section class="max-w-3xl mx-auto p-6">
-    <h2 id="post-title" class="text-2xl font-bold mb-2"></h2>
-    <p id="post-date" class="text-sm text-gray-500 mb-4"></p>
-    <div id="post-body" class="prose max-w-none text-gray-800"></div>
-
-    <!-- Reactions -->
-    <div class="flex gap-4 mt-6" id="reactions">
-      <button data-type="like" class="reaction-btn">❤️ <span id="like-count">0</span></button>
-      <button data-type="laugh" class="reaction-btn">😂 <span id="laugh-count">0</span></button>
-      <button data-type="fire" class="reaction-btn">🔥 <span id="fire-count">0</span></button>
+  <!-- Comments Section -->
+  <div class="max-w-4xl mx-auto px-4 py-8">
+    <h2 class="text-2xl font-bold mb-4">Comments</h2>
+    <div id="comment-form" class="mb-6">
+      <textarea id="comment-input" placeholder="Write a comment..." class="w-full p-3 border rounded mb-2"></textarea>
+      <button id="submit-comment" class="bg-green-600 text-white px-4 py-2 rounded">Post Comment</button>
     </div>
+    <div id="comments-container" class="space-y-6"></div>
+  </div>
 
-    <!-- Comment Section -->
-    <div class="mt-10">
-      <h3 class="text-xl font-semibold mb-2">Comments</h3>
-      <form id="comment-form" class="mb-4">
-        <input id="commenter" type="text" placeholder="Your name" required class="w-full p-2 border rounded mb-2"/>
-        <textarea id="comment" placeholder="Write a comment..." required class="w-full p-2 border rounded mb-2"></textarea>
-        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Post Comment</button>
-      </form>
-      <div id="comments-list" class="space-y-4"></div>
-    </div>
-  </section>
-
-  <footer class="bg-green-700 text-white text-center py-6">
-    <p class="text-sm">&copy; 2025 Izuchukwu Foods</p>
-  </footer>
-
-  <!-- Firebase Script -->
+  <!-- Firebase Setup -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, getDoc, updateDoc, collection, addDoc, query, where, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getFirestore, doc, getDoc, collection,
+      addDoc, getDocs, updateDoc, deleteDoc, onSnapshot, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getAuth, GoogleAuthProvider, signInWithPopup,
+      signOut, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
@@ -68,119 +55,159 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const auth = getAuth(app);
+    const provider = new GoogleAuthProvider();
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const postId = urlParams.get("id");
-    const isAdmin = true; // 🔒 CHANGE TO FALSE OR ADD AUTH LATER
+    const postId = new URLSearchParams(window.location.search).get("id");
+    const postContainer = document.getElementById("post-container");
+    const commentInput = document.getElementById("comment-input");
+    const submitCommentBtn = document.getElementById("submit-comment");
+    const commentsContainer = document.getElementById("comments-container");
 
-    const postTitle = document.getElementById("post-title");
-    const postBody = document.getElementById("post-body");
-    const postDate = document.getElementById("post-date");
-    const reactions = {
-      like: document.getElementById("like-count"),
-      laugh: document.getElementById("laugh-count"),
-      fire: document.getElementById("fire-count")
-    };
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
 
-    const commentForm = document.getElementById("comment-form");
-    const commenter = document.getElementById("commenter");
-    const commentInput = document.getElementById("comment");
-    const commentsList = document.getElementById("comments-list");
+    let currentUser = null;
+    const adminEmail = "youremail@example.com"; // Replace with your admin email
+
+    onAuthStateChanged(auth, (user) => {
+      currentUser = user;
+      if (user) {
+        loginBtn.classList.add("hidden");
+        logoutBtn.classList.remove("hidden");
+      } else {
+        loginBtn.classList.remove("hidden");
+        logoutBtn.classList.add("hidden");
+      }
+    });
+
+    loginBtn.onclick = () => signInWithPopup(auth, provider);
+    logoutBtn.onclick = () => signOut(auth);
 
     async function loadPost() {
-      const docRef = doc(db, "posts", postId);
-      const postSnap = await getDoc(docRef);
-      if (!postSnap.exists()) {
-        postTitle.textContent = "Post not found.";
-        return;
+      const postRef = doc(db, "posts", postId);
+      const postSnap = await getDoc(postRef);
+      if (postSnap.exists()) {
+        const post = postSnap.data();
+        const html = `
+          <div class="bg-white p-6 rounded shadow">
+            <h1 class="text-3xl font-bold">${post.title}</h1>
+            <p class="text-gray-500 text-sm mb-4">${new Date(post.timestamp?.seconds * 1000).toLocaleString()}</p>
+            <p class="text-lg">${post.content}</p>
+            ${currentUser?.email === adminEmail ? `
+              <div class="mt-4 space-x-2">
+                <button onclick="editPost('${postId}')" class="text-blue-600 text-sm">Edit</button>
+                <button onclick="deletePost('${postId}')" class="text-red-600 text-sm">Delete</button>
+              </div>` : ""
+            }
+          </div>`;
+        postContainer.innerHTML = html;
+      } else {
+        postContainer.innerHTML = `<p class="text-red-600">Post not found.</p>`;
       }
-      const post = postSnap.data();
-      postTitle.textContent = post.title;
-      postBody.innerHTML = post.content;
-      postDate.textContent = new Date(post.timestamp).toLocaleString();
-
-      // Set reactions
-      reactions.like.textContent = post.reactions?.like || 0;
-      reactions.laugh.textContent = post.reactions?.laugh || 0;
-      reactions.fire.textContent = post.reactions?.fire || 0;
     }
 
-    // Handle reaction
-    document.querySelectorAll(".reaction-btn").forEach(btn => {
-      btn.addEventListener("click", async () => {
-        const type = btn.getAttribute("data-type");
-        const docRef = doc(db, "posts", postId);
-        const snap = await getDoc(docRef);
-        const post = snap.data();
-        const newCount = (post.reactions?.[type] || 0) + 1;
+    window.editPost = (id) => {
+      const newContent = prompt("Edit post content:");
+      if (newContent) {
+        updateDoc(doc(db, "posts", id), { content: newContent });
+      }
+    };
 
-        await updateDoc(docRef, {
-          [`reactions.${type}`]: newCount
-        });
+    window.deletePost = async (id) => {
+      if (confirm("Delete this post?")) {
+        await deleteDoc(doc(db, "posts", id));
+        window.location.href = "blog.html";
+      }
+    };
 
-        reactions[type].textContent = newCount;
+    async function postComment() {
+      const content = commentInput.value.trim();
+      if (!content || !currentUser) return;
+      await addDoc(collection(db, "posts", postId, "comments"), {
+        content,
+        user: currentUser.displayName,
+        uid: currentUser.uid,
+        email: currentUser.email,
+        timestamp: serverTimestamp(),
+        likes: 0
       });
-    });
-
-    // Add comment
-    commentForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      await addDoc(collection(db, "comments"), {
-        postId,
-        name: commenter.value,
-        content: commentInput.value,
-        timestamp: Date.now()
-      });
-      commenter.value = "";
       commentInput.value = "";
-      loadComments();
-    });
-
-    function formatDate(timestamp) {
-      return new Date(timestamp).toLocaleString();
     }
 
-    // Load comments
-    async function loadComments() {
-      commentsList.innerHTML = "<p class='text-gray-500'>Loading comments...</p>";
-
-      const q = query(collection(db, "comments"), where("postId", "==", postId));
-      const snapshot = await getDocs(q);
-      commentsList.innerHTML = "";
-
-      snapshot.forEach(docSnap => {
-        const comment = docSnap.data();
-        const commentId = docSnap.id;
-
-        const el = document.createElement("div");
-        el.className = "bg-white border rounded p-3 relative";
-        el.innerHTML = `
-          <p class="text-gray-800 font-medium">${comment.name}</p>
-          <p class="text-gray-700 mt-1">${comment.content}</p>
-          <p class="text-xs text-gray-500 mt-1">${formatDate(comment.timestamp)}</p>
-          ${isAdmin ? `<button data-id="${commentId}" class="delete-comment absolute top-2 right-2 text-xs text-red-600 hover:underline">🗑️ Delete</button>` : ""}
-        `;
-        commentsList.appendChild(el);
-      });
-
-      if (!commentsList.innerHTML) {
-        commentsList.innerHTML = "<p class='text-gray-500'>No comments yet.</p>";
+    async function likeComment(commentId) {
+      const ref = doc(db, "posts", postId, "comments", commentId);
+      const snap = await getDoc(ref);
+      if (snap.exists()) {
+        const data = snap.data();
+        await updateDoc(ref, { likes: (data.likes || 0) + 1 });
       }
+    }
 
-      // Handle delete
-      document.querySelectorAll(".delete-comment").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const id = btn.getAttribute("data-id");
-          if (confirm("Delete this comment?")) {
-            await deleteDoc(doc(db, "comments", id));
-            loadComments();
-          }
-        });
+    async function replyToComment(commentId) {
+      const reply = prompt("Reply to comment:");
+      if (!reply || !currentUser) return;
+      await addDoc(collection(db, "posts", postId, "comments", commentId, "replies"), {
+        content: reply,
+        user: currentUser.displayName,
+        timestamp: serverTimestamp()
       });
     }
+
+    async function deleteComment(commentId) {
+      if (!currentUser || currentUser.email !== adminEmail) return;
+      if (confirm("Delete this comment?")) {
+        await deleteDoc(doc(db, "posts", postId, "comments", commentId));
+      }
+    }
+
+    async function editComment(commentId) {
+      const newText = prompt("Edit comment:");
+      if (newText) {
+        await updateDoc(doc(db, "posts", postId, "comments", commentId), { content: newText });
+      }
+    }
+
+    function renderComments() {
+      const commentsRef = collection(db, "posts", postId, "comments");
+
+      onSnapshot(commentsRef, async (snapshot) => {
+        commentsContainer.innerHTML = "";
+
+        for (const docSnap of snapshot.docs) {
+          const comment = docSnap.data();
+          const repliesSnap = await getDocs(collection(db, "posts", postId, "comments", docSnap.id, "replies"));
+
+          const repliesHTML = repliesSnap.docs.map(replyDoc => {
+            const reply = replyDoc.data();
+            return `<div class="ml-6 mt-2 text-sm bg-gray-50 p-2 rounded">
+              <p><strong>${reply.user}</strong>: ${reply.content}</p>
+              <p class="text-xs text-gray-400">${new Date(reply.timestamp?.seconds * 1000).toLocaleString()}</p>
+            </div>`;
+          }).join("");
+
+          commentsContainer.innerHTML += `
+            <div class="bg-white p-4 rounded shadow-sm">
+              <p><strong>${comment.user}</strong>: ${comment.content}</p>
+              <div class="text-xs text-gray-500">${new Date(comment.timestamp?.seconds * 1000).toLocaleString()}</div>
+              <div class="mt-2 space-x-3">
+                <button onclick="likeComment('${docSnap.id}')" class="text-green-700 text-sm">❤️ ${comment.likes || 0}</button>
+                <button onclick="replyToComment('${docSnap.id}')" class="text-blue-700 text-sm">Reply</button>
+                ${currentUser?.email === adminEmail ? `
+                  <button onclick="editComment('${docSnap.id}')" class="text-yellow-600 text-sm">Edit</button>
+                  <button onclick="deleteComment('${docSnap.id}')" class="text-red-600 text-sm">Delete</button>
+                ` : ""}
+              </div>
+              ${repliesHTML}
+            </div>`;
+        }
+      });
+    }
+
+    submitCommentBtn.addEventListener("click", postComment);
 
     loadPost();
-    loadComments();
+    renderComments();
   </script>
 </body>
 </html>
