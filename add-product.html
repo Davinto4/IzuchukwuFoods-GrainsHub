@@ -3,53 +3,78 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Add Product – Admin</title>
+  <title>Add Product – Izuchukwu Foods</title>
   <script>
+    // Redirect if not logged in
     if (localStorage.getItem('isLoggedIn') !== 'true') {
       window.location.href = 'login.html';
     }
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <style>body { font-family: 'Inter', sans-serif; }</style>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
+  <!-- Navbar -->
   <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center">
-    <h1 class="text-xl font-bold">Add New Product</h1>
-    <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded">Logout</button>
+    <h1 class="text-lg font-bold">Izuchukwu Foods Admin</h1>
+    <div class="space-x-4 text-sm">
+      <a href="admin.html" class="hover:underline">Dashboard</a>
+      <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded">Logout</button>
+    </div>
   </nav>
 
-  <main class="max-w-lg mx-auto p-6 bg-white shadow-md rounded mt-8">
+  <!-- Form Section -->
+  <main class="max-w-xl mx-auto mt-10 p-6 bg-white shadow rounded-lg">
+    <h2 class="text-xl font-semibold mb-4">Add New Product</h2>
     <form id="addProductForm" class="space-y-4">
-      <div>
-        <label class="block text-sm font-medium">Product Name</label>
-        <input type="text" required class="w-full px-4 py-2 border rounded focus:ring" />
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Image URL</label>
-        <input type="url" required class="w-full px-4 py-2 border rounded focus:ring" />
-      </div>
-      <div>
-        <label class="block text-sm font-medium">Category</label>
-        <input type="text" required class="w-full px-4 py-2 border rounded focus:ring" />
-      </div>
-      <div class="text-center">
-        <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">➕ Add Product</button>
-      </div>
+      <input type="text" placeholder="Product Name" class="w-full border p-2 rounded" required>
+      <input type="url" placeholder="Image URL" class="w-full border p-2 rounded" required>
+      <input type="text" placeholder="Category (e.g. food, oil, spice)" class="w-full border p-2 rounded" required>
+      <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Add Product</button>
     </form>
   </main>
 
-  <script>
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
+      authDomain: "izuchukwu-foods.firebaseapp.com",
+      projectId: "izuchukwu-foods",
+      storageBucket: "izuchukwu-foods.firebasestorage.app",
+      messagingSenderId: "811147638426",
+      appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const form = document.getElementById('addProductForm');
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const [nameInput, imageInput, categoryInput] = form.querySelectorAll('input');
+
+      try {
+        await addDoc(collection(db, "products"), {
+          name: nameInput.value.trim(),
+          image: imageInput.value.trim(),
+          category: categoryInput.value.trim(),
+          createdAt: new Date()
+        });
+        alert("✅ Product added successfully!");
+        form.reset();
+      } catch (err) {
+        alert("❌ Failed to add product.");
+        console.error(err);
+      }
+    });
+
     function logout() {
       localStorage.removeItem('isLoggedIn');
       window.location.href = 'login.html';
     }
-
-    document.getElementById('addProductForm').addEventListener('submit', function(e) {
-      e.preventDefault();
-      alert('✅ Product added (simulated).');
-      this.reset();
-    });
   </script>
 
 </body>
