@@ -3,41 +3,53 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Add Product – Izuchukwu Foods</title>
-  <script>
-    // Redirect if not logged in
-    if (localStorage.getItem('isLoggedIn') !== 'true') {
-      window.location.href = 'login.html';
-    }
-  </script>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Izuchukwu Foods - Products</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
   <!-- Navbar -->
-  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center">
-    <h1 class="text-lg font-bold">Izuchukwu Foods Admin</h1>
-    <div class="space-x-4 text-sm">
-      <a href="admin.html" class="hover:underline">Dashboard</a>
-      <button onclick="logout()" class="bg-red-500 hover:bg-red-600 px-3 py-1 rounded">Logout</button>
+  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
+    <a href="index.html" class="text-xl font-bold">Izuchukwu Foods</a>
+    <div class="space-x-6 text-sm font-medium">
+      <a href="index.html" class="hover:underline">Home</a>
+      <a href="products.html" class="hover:underline">Products</a>
+      <a href="about.html" class="hover:underline">About</a>
     </div>
   </nav>
 
-  <!-- Form Section -->
-  <main class="max-w-xl mx-auto mt-10 p-6 bg-white shadow rounded-lg">
-    <h2 class="text-xl font-semibold mb-4">Add New Product</h2>
-    <form id="addProductForm" class="space-y-4">
-      <input type="text" placeholder="Product Name" class="w-full border p-2 rounded" required>
-      <input type="url" placeholder="Image URL" class="w-full border p-2 rounded" required>
-      <input type="text" placeholder="Category (e.g. food, oil, spice)" class="w-full border p-2 rounded" required>
-      <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700">Add Product</button>
-    </form>
-  </main>
+  <!-- Header -->
+  <header class="text-center py-6">
+    <h1 class="text-3xl font-bold">Our Products</h1>
+    <p class="text-sm text-gray-500 mt-2">Browse foodstuffs, spices, and household essentials</p>
+  </header>
 
-  <!-- Firebase SDK -->
+  <!-- Search Bar -->
+  <div class="max-w-4xl mx-auto px-4 mb-6">
+    <input
+      type="text"
+      id="searchInput"
+      placeholder="Search by name or category..."
+      class="w-full p-3 border rounded-lg focus:outline-none focus:ring focus:border-green-500"
+    />
+  </div>
+
+  <!-- Loading Spinner -->
+  <div id="loading" class="text-center py-10">
+    <svg class="animate-spin h-8 w-8 text-green-700 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+    </svg>
+    <p class="text-gray-600 mt-2">Loading products...</p>
+  </div>
+
+  <!-- Product Grid -->
+  <div id="product-list" class="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 hidden"></div>
+
+  <!-- Firebase Script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
@@ -51,31 +63,66 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const form = document.getElementById('addProductForm');
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const [nameInput, imageInput, categoryInput] = form.querySelectorAll('input');
+    const productList = document.getElementById("product-list");
+    const loading = document.getElementById("loading");
+    const searchInput = document.getElementById("searchInput");
 
+    let allProducts = [];
+
+    async function fetchProducts() {
       try {
-        await addDoc(collection(db, "products"), {
-          name: nameInput.value.trim(),
-          image: imageInput.value.trim(),
-          category: categoryInput.value.trim(),
-          createdAt: new Date()
+        const querySnapshot = await getDocs(collection(db, "products"));
+        allProducts = [];
+
+        querySnapshot.forEach((doc) => {
+          const data = doc.data();
+          allProducts.push({
+            name: data.name || "Unnamed Product",
+            category: data.category || "General"
+          });
         });
-        alert("✅ Product added successfully!");
-        form.reset();
-      } catch (err) {
-        alert("❌ Failed to add product.");
-        console.error(err);
+
+        renderProducts(allProducts);
+        loading.style.display = "none";
+        productList.classList.remove("hidden");
+      } catch (error) {
+        loading.innerHTML = "<p class='text-red-500'>Failed to load products. Check Firebase setup.</p>";
+        console.error("Error fetching products:", error);
       }
+    }
+
+    function renderProducts(products) {
+      productList.innerHTML = "";
+
+      if (products.length === 0) {
+        productList.innerHTML = "<p class='text-center text-gray-600 col-span-full'>No products found.</p>";
+        return;
+      }
+
+      products.forEach(product => {
+        const card = `
+          <div class="bg-white shadow rounded-lg overflow-hidden p-4">
+            <h3 class="text-lg font-semibold">${product.name}</h3>
+            <p class="text-sm text-gray-500 mb-2">${product.category}</p>
+            <a href="https://wa.me/2349038441549?text=I%20want%20to%20order%20${encodeURIComponent(product.name)}"
+               target="_blank"
+               class="inline-block bg-green-600 text-white text-sm px-3 py-1 rounded">Order on WhatsApp</a>
+          </div>
+        `;
+        productList.innerHTML += card;
+      });
+    }
+
+    searchInput.addEventListener("input", () => {
+      const keyword = searchInput.value.toLowerCase();
+      const filtered = allProducts.filter(p =>
+        p.name.toLowerCase().includes(keyword) ||
+        p.category.toLowerCase().includes(keyword)
+      );
+      renderProducts(filtered);
     });
 
-    function logout() {
-      localStorage.removeItem('isLoggedIn');
-      window.location.href = 'login.html';
-    }
+    fetchProducts();
   </script>
-
 </body>
 </html>
