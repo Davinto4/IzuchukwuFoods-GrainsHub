@@ -1,28 +1,42 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Blog Post - Izuchukwu Foods</title>
+  <title>Post - Izuchukwu Foods Blog</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 text-gray-800">  <!-- Navbar -->  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
+<body class="bg-gray-100 text-gray-800">
+
+  <!-- Navbar -->
+  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
     <a href="index.html" class="text-xl font-bold">Izuchukwu Foods</a>
     <div class="space-x-6 text-sm font-medium">
       <a href="index.html" class="hover:underline">Home</a>
       <a href="blog.html" class="hover:underline">Blog</a>
     </div>
-  </nav>  <!-- Blog Post Content -->  <div class="max-w-4xl mx-auto px-4 py-8" id="post-container"></div>  <!-- Comments Section -->  <div class="max-w-4xl mx-auto px-4 py-8">
-    <h2 class="text-2xl font-bold mb-4">Comments</h2>
-    <div id="comment-form" class="mb-6">
-      <textarea id="comment-input" placeholder="Write a comment..." class="w-full p-3 border rounded mb-2"></textarea>
-      <button id="submit-comment" class="bg-green-600 text-white px-4 py-2 rounded">Post Comment</button>
-    </div>
-    <div id="comments-container" class="space-y-6"></div>
-  </div>  <!-- Firebase Setup -->  <script type="module">
+  </nav>
+
+  <!-- Post Content -->
+  <main class="max-w-3xl mx-auto p-6 bg-white mt-6 shadow rounded-lg">
+    <h1 id="post-title" class="text-2xl font-bold mb-4"></h1>
+    <p id="post-content" class="mb-6"></p>
+
+    <!-- Comment Section -->
+    <h2 class="text-lg font-semibold mb-2">Comments</h2>
+    <form id="comment-form" class="mb-6">
+      <textarea id="comment-input" class="w-full p-3 border rounded mb-2" placeholder="Add a comment..."></textarea>
+      <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded">Post Comment</button>
+    </form>
+    <div id="comment-list"></div>
+  </main>
+
+  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
-      getFirestore, doc, getDoc, collection,
-      addDoc, getDocs, updateDoc, deleteDoc, onSnapshot, serverTimestamp
+      getFirestore, doc, getDoc, collection, addDoc,
+      updateDoc, deleteDoc, query, where, getDocs,
+      serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
@@ -37,110 +51,145 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const postId = new URLSearchParams(window.location.search).get("id");
-    const postContainer = document.getElementById("post-container");
+    const postId = new URLSearchParams(location.search).get("id");
+
+    const userId = localStorage.getItem("izuchukwu_user_id") || (() => {
+      const id = `user-${Math.random().toString(36).substring(2)}-${Date.now()}`;
+      localStorage.setItem("izuchukwu_user_id", id);
+      return id;
+    })();
+
+    const displayName = localStorage.getItem("izuchukwu_display_name") || (() => {
+      const name = prompt("Enter your name (optional):") || "Guest";
+      localStorage.setItem("izuchukwu_display_name", name);
+      return name;
+    })();
+
+    const commentForm = document.getElementById("comment-form");
     const commentInput = document.getElementById("comment-input");
-    const submitCommentBtn = document.getElementById("submit-comment");
-    const commentsContainer = document.getElementById("comments-container");
+    const commentList = document.getElementById("comment-list");
 
-    const adminEmail = "youremail@example.com"; // Replace with your admin email
-
+    // Load blog post
     async function loadPost() {
-      const postRef = doc(db, "posts", postId);
-      const postSnap = await getDoc(postRef);
-      if (postSnap.exists()) {
-        const post = postSnap.data();
-        const html = `
-          <div class="bg-white p-6 rounded shadow">
-            <h1 class="text-3xl font-bold">${post.title}</h1>
-            <p class="text-gray-500 text-sm mb-4">${new Date(post.timestamp?.seconds * 1000).toLocaleString()}</p>
-            <p class="text-lg">${post.content}</p>
-          </div>`;
-        postContainer.innerHTML = html;
+      const docRef = doc(db, "posts", postId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        document.getElementById("post-title").textContent = docSnap.data().title;
+        document.getElementById("post-content").textContent = docSnap.data().content;
       } else {
-        postContainer.innerHTML = `<p class="text-red-600">Post not found.</p>`;
+        document.getElementById("post-title").textContent = "Post not found";
+        document.getElementById("post-content").textContent = "";
       }
     }
 
-    async function postComment() {
-      const content = commentInput.value.trim();
-      if (!content) return;
+    // Load comments
+    async function loadComments() {
+      commentList.innerHTML = "";
+      const q = query(collection(db, "posts", postId, "comments"));
+      const querySnapshot = await getDocs(q);
+      querySnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const commentId = docSnap.id;
+
+        const wrapper = document.createElement("div");
+        wrapper.className = "bg-gray-50 border p-4 rounded mb-3";
+
+        wrapper.innerHTML = `
+          <p class="text-sm text-gray-700"><span class="font-semibold">${data.displayName}</span> – ${new Date(data.timestamp?.toDate()).toLocaleString()}</p>
+          <p class="mt-1 mb-2">${data.text}</p>
+          <div class="flex items-center space-x-3 text-sm">
+            <button class="like-btn text-green-600" data-id="${commentId}">❤️ ${data.likes?.length || 0}</button>
+            <button class="reply-btn text-blue-600" data-id="${commentId}">Reply</button>
+            ${data.userId === userId ? `<button class="edit-btn text-yellow-600" data-id="${commentId}">Edit</button>` : ""}
+            ${userId === "admin" ? `<button class="delete-btn text-red-600" data-id="${commentId}">Delete</button>` : ""}
+          </div>
+          <div class="replies mt-3 pl-4 border-l"></div>
+        `;
+
+        commentList.appendChild(wrapper);
+
+        loadReplies(commentId, wrapper.querySelector(".replies"));
+      });
+    }
+
+    // Load replies
+    async function loadReplies(commentId, container) {
+      const q = query(collection(db, "posts", postId, "comments", commentId, "replies"));
+      const snap = await getDocs(q);
+      snap.forEach(doc => {
+        const reply = doc.data();
+        const div = document.createElement("div");
+        div.className = "text-sm bg-white p-2 rounded mb-2";
+        div.innerHTML = `
+          <p><span class="font-semibold">${reply.displayName}</span>: ${reply.text}</p>
+          <p class="text-gray-400 text-xs">${new Date(reply.timestamp?.toDate()).toLocaleString()}</p>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    // Submit new comment
+    commentForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const text = commentInput.value.trim();
+      if (!text) return;
       await addDoc(collection(db, "posts", postId, "comments"), {
-        content,
+        text,
+        userId,
+        displayName,
         timestamp: serverTimestamp(),
-        likes: 0
+        likes: []
       });
       commentInput.value = "";
-    }
+      loadComments();
+    });
 
-    async function likeComment(commentId) {
-      const ref = doc(db, "posts", postId, "comments", commentId);
-      const snap = await getDoc(ref);
-      if (snap.exists()) {
+    // Delegate likes, reply, edit, delete
+    commentList.addEventListener("click", async (e) => {
+      const id = e.target.dataset.id;
+      const ref = doc(db, "posts", postId, "comments", id);
+
+      if (e.target.classList.contains("like-btn")) {
+        const snap = await getDoc(ref);
         const data = snap.data();
-        await updateDoc(ref, { likes: (data.likes || 0) + 1 });
+        const likes = data.likes || [];
+        const updatedLikes = likes.includes(userId) ? likes.filter(id => id !== userId) : [...likes, userId];
+        await updateDoc(ref, { likes: updatedLikes });
+        loadComments();
       }
-    }
 
-    async function replyToComment(commentId) {
-      const reply = prompt("Reply to comment:");
-      if (!reply) return;
-      await addDoc(collection(db, "posts", postId, "comments", commentId, "replies"), {
-        content: reply,
-        timestamp: serverTimestamp()
-      });
-    }
-
-    async function deleteComment(commentId) {
-      if (confirm("Delete this comment?")) {
-        await deleteDoc(doc(db, "posts", postId, "comments", commentId));
-      }
-    }
-
-    async function editComment(commentId) {
-      const newText = prompt("Edit comment:");
-      if (newText) {
-        await updateDoc(doc(db, "posts", postId, "comments", commentId), { content: newText });
-      }
-    }
-
-    function renderComments() {
-      const commentsRef = collection(db, "posts", postId, "comments");
-
-      onSnapshot(commentsRef, async (snapshot) => {
-        commentsContainer.innerHTML = "";
-
-        for (const docSnap of snapshot.docs) {
-          const comment = docSnap.data();
-          const repliesSnap = await getDocs(collection(db, "posts", postId, "comments", docSnap.id, "replies"));
-
-          const repliesHTML = repliesSnap.docs.map(replyDoc => {
-            const reply = replyDoc.data();
-            return `<div class="ml-6 mt-2 text-sm bg-gray-50 p-2 rounded">
-              <p>${reply.content}</p>
-              <p class="text-xs text-gray-400">${new Date(reply.timestamp?.seconds * 1000).toLocaleString()}</p>
-            </div>`;
-          }).join("");
-
-          commentsContainer.innerHTML += `
-            <div class="bg-white p-4 rounded shadow-sm">
-              <p>${comment.content}</p>
-              <div class="text-xs text-gray-500">${new Date(comment.timestamp?.seconds * 1000).toLocaleString()}</div>
-              <div class="mt-2 space-x-3">
-                <button onclick="likeComment('${docSnap.id}')" class="text-green-700 text-sm">❤️ ${comment.likes || 0}</button>
-                <button onclick="replyToComment('${docSnap.id}')" class="text-blue-700 text-sm">Reply</button>
-                <button onclick="editComment('${docSnap.id}')" class="text-yellow-600 text-sm">Edit</button>
-                <button onclick="deleteComment('${docSnap.id}')" class="text-red-600 text-sm">Delete</button>
-              </div>
-              ${repliesHTML}
-            </div>`;
+      if (e.target.classList.contains("delete-btn")) {
+        if (confirm("Delete this comment?")) {
+          await deleteDoc(ref);
+          loadComments();
         }
-      });
-    }
+      }
 
-    submitCommentBtn.addEventListener("click", postComment);
+      if (e.target.classList.contains("edit-btn")) {
+        const snap = await getDoc(ref);
+        const newText = prompt("Edit your comment:", snap.data().text);
+        if (newText) {
+          await updateDoc(ref, { text: newText });
+          loadComments();
+        }
+      }
+
+      if (e.target.classList.contains("reply-btn")) {
+        const replyText = prompt("Reply:");
+        if (replyText) {
+          await addDoc(collection(db, "posts", postId, "comments", id, "replies"), {
+            text: replyText,
+            userId,
+            displayName,
+            timestamp: serverTimestamp()
+          });
+          loadComments();
+        }
+      }
+    });
 
     loadPost();
-    renderComments();
-  </script></body>
+    loadComments();
+  </script>
+</body>
 </html>
