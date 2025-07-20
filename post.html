@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Blog Post - Izuchukwu Foods</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+  <!-- Navbar -->
+  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
+    <a href="index.html" class="text-xl font-bold">Izuchukwu Foods</a>
+    <div class="space-x-6 text-sm font-medium">
+      <a href="index.html" class="hover:underline">Home</a>
+      <a href="products.html" class="hover:underline">Products</a>
+      <a href="blog.html" class="hover:underline font-bold underline">Blog</a>
+    </div>
+  </nav>
+
+  <main class="max-w-3xl mx-auto px-4 py-10">
+    <!-- Post -->
+    <article id="postContent" class="bg-white shadow rounded p-6 mb-8">
+      <h1 id="postTitle" class="text-2xl font-bold text-green-700 mb-4">Loading...</h1>
+      <p id="postBody" class="text-gray-700 leading-relaxed"></p>
+    </article>
+
+    <!-- Reactions -->
+    <div class="flex items-center gap-4 mb-8 px-2">
+      <button id="likeBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 text-sm">
+        👍 Like (<span id="likeCount">0</span>)
+      </button>
+    </div>
+
+    <!-- Comments -->
+    <section>
+      <h2 class="text-xl font-semibold mb-4">Comments</h2>
+      <form id="commentForm" class="mb-6">
+        <input
+          type="text"
+          id="commentInput"
+          placeholder="Write a comment..."
+          class="w-full p-3 border rounded mb-2 focus:outline-none"
+          required
+        />
+        <button type="submit" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Post Comment</button>
+      </form>
+      <div id="commentsList"></div>
+    </section>
+  </main>
+
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore, doc, getDoc, updateDoc, increment,
+      collection, addDoc, query, where, getDocs, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
+      authDomain: "izuchukwu-foods.firebaseapp.com",
+      projectId: "izuchukwu-foods",
+      storageBucket: "izuchukwu-foods.firebasestorage.app",
+      messagingSenderId: "811147638426",
+      appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const postId = new URLSearchParams(window.location.search).get('id');
+    const postRef = doc(db, "blogPosts", postId);
+
+    const postTitle = document.getElementById("postTitle");
+    const postBody = document.getElementById("postBody");
+    const likeCount = document.getElementById("likeCount");
+    const likeBtn = document.getElementById("likeBtn");
+    const commentForm = document.getElementById("commentForm");
+    const commentInput = document.getElementById("commentInput");
+    const commentsList = document.getElementById("commentsList");
+
+    async function loadPost() {
+      const docSnap = await getDoc(postRef);
+      if (!docSnap.exists()) {
+        postTitle.innerText = "Post not found.";
+        return;
+      }
+
+      const post = docSnap.data();
+      postTitle.innerText = post.title;
+      postBody.innerText = post.content;
+      likeCount.innerText = post.likes || 0;
+    }
+
+    likeBtn.addEventListener("click", async () => {
+      await updateDoc(postRef, {
+        likes: increment(1)
+      });
+      const snap = await getDoc(postRef);
+      likeCount.innerText = snap.data().likes || 0;
+    });
+
+    commentForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const content = commentInput.value.trim();
+      if (!content) return;
+
+      await addDoc(collection(db, "comments"), {
+        postId,
+        content,
+        timestamp: serverTimestamp()
+      });
+
+      commentInput.value = "";
+      loadComments();
+    });
+
+    async function loadComments() {
+      commentsList.innerHTML = "<p class='text-gray-500'>Loading comments...</p>";
+
+      const q = query(collection(db, "comments"), where("postId", "==", postId));
+      const snapshot = await getDocs(q);
+
+      commentsList.innerHTML = "";
+      snapshot.forEach(doc => {
+        const comment = doc.data();
+        const el = document.createElement("div");
+        el.className = "bg-white border rounded p-3 mb-3";
+        el.innerHTML = `<p class="text-gray-700">${comment.content}</p>`;
+        commentsList.appendChild(el);
+      });
+
+      if (commentsList.innerHTML === "") {
+        commentsList.innerHTML = "<p class='text-gray-500'>No comments yet.</p>";
+      }
+    }
+
+    loadPost();
+    loadComments();
+  </script>
+</body>
+</html>
