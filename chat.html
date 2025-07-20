@@ -2,48 +2,44 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Global Chat – Izuchukwu Foods</title>
+  <title>Global Chat - Izuchukwu Foods</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script type="module" src="/js/chat.js" defer></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-gray-100">
-  <!-- Navbar -->
-  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
+<body class="bg-gray-50 text-gray-800">
+  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center">
     <a href="index.html" class="text-xl font-bold">Izuchukwu Foods</a>
     <div class="space-x-6 text-sm font-medium">
       <a href="index.html" class="hover:underline">Home</a>
       <a href="products.html" class="hover:underline">Products</a>
       <a href="about.html" class="hover:underline">About</a>
       <a href="blog.html" class="hover:underline">Blog</a>
-      <a href="chat.html" class="underline">Global Chat</a>
+      <a href="chat.html" class="hover:underline">Global Chat</a>
     </div>
-  </nav>  <!-- Auth/Login Section -->  <section id="authSection" class="max-w-md mx-auto mt-10 p-6 bg-white rounded shadow">
-    <h2 class="text-xl font-bold mb-4 text-center text-green-700">Join the Global Chat</h2>
-    <input type="text" id="username" placeholder="Your name" class="w-full border px-4 py-2 rounded mb-2" />
-    <input type="password" id="password" placeholder="Password" class="w-full border px-4 py-2 rounded mb-4" />
-    <div class="flex justify-between">
-      <button id="signupBtn" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Sign Up</button>
-      <button id="loginBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Log In</button>
-    </div>
-  </section>  <!-- Chat Section -->  <section id="chatSection" class="hidden max-w-2xl mx-auto mt-8">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-lg font-bold text-green-700">Welcome, <span id="currentUser"></span></h2>
-      <button id="logoutBtn" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700">Logout</button>
-    </div><!-- Chat Box -->
-<div id="chatBox" class="bg-white border rounded p-4 h-96 overflow-y-auto mb-4"></div>
+  </nav>  <main class="max-w-3xl mx-auto px-4 py-6">
+    <div id="authSection" class="mb-6">
+      <div id="loginPanel" class="space-y-4">
+        <input type="text" id="username" placeholder="Enter name" class="w-full border p-2 rounded">
+        <input type="password" id="password" placeholder="Enter password" class="w-full border p-2 rounded">
+        <button id="loginBtn" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800 w-full">Login</button>
+      </div>
+      <div id="userPanel" class="hidden justify-between items-center mt-4">
+        <span class="text-sm">Logged in as <strong id="loggedInUser"></strong> (<span id="userStatus">offline</span>)</span>
+        <button id="logoutBtn" class="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700 text-sm">Logout</button>
+      </div>
+    </div><div id="chatBox" class="bg-white border rounded p-4 h-96 overflow-y-auto space-y-4 mb-4"></div>
 
-<!-- Typing Indicator -->
-<div id="typingIndicator" class="text-sm text-gray-500 italic mb-2 hidden"></div>
-
-<!-- Input + Send -->
-<div class="flex items-center gap-2">
-  <input type="text" id="messageInput" placeholder="Type your message..." class="flex-grow border rounded px-4 py-2" />
-  <button id="sendMessage" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Send</button>
+<div class="flex items-center space-x-2">
+  <input type="text" id="messageInput" placeholder="Type your message..." class="flex-grow border rounded px-4 py-2">
+  <button id="emojiBtn" class="text-xl">😊</button>
+  <button id="sendBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
 </div>
 
-  </section>  <script type="module">
+  </main>  <footer class="bg-green-700 text-white text-center py-4 mt-10">
+    <p class="text-sm">&copy; 2025 Izuchukwu Foods. All rights reserved.</p>
+  </footer>  <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js" type="module"></script>  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
@@ -57,89 +53,127 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const authSection = document.getElementById("authSection");
-    const chatSection = document.getElementById("chatSection");
-    const currentUser = document.getElementById("currentUser");
-    const messageInput = document.getElementById("messageInput");
-    const chatBox = document.getElementById("chatBox");
-    const typingIndicator = document.getElementById("typingIndicator");
-
-    const signupBtn = document.getElementById("signupBtn");
     const loginBtn = document.getElementById("loginBtn");
     const logoutBtn = document.getElementById("logoutBtn");
-    const sendMessage = document.getElementById("sendMessage");
+    const usernameInput = document.getElementById("username");
+    const passwordInput = document.getElementById("password");
+    const loggedInUser = document.getElementById("loggedInUser");
+    const userStatus = document.getElementById("userStatus");
 
-    const users = {};
+    const authSection = document.getElementById("authSection");
+    const loginPanel = document.getElementById("loginPanel");
+    const userPanel = document.getElementById("userPanel");
+    const chatBox = document.getElementById("chatBox");
+    const sendBtn = document.getElementById("sendBtn");
+    const messageInput = document.getElementById("messageInput");
+    const emojiBtn = document.getElementById("emojiBtn");
 
-    function scrollToBottom() {
-      chatBox.scrollTop = chatBox.scrollHeight;
+    let currentUser = localStorage.getItem("username") || null;
+
+    const showLogin = () => {
+      loginPanel.classList.remove("hidden");
+      userPanel.classList.add("hidden");
+    };
+
+    const showUser = () => {
+      loginPanel.classList.add("hidden");
+      userPanel.classList.remove("hidden");
+      loggedInUser.textContent = currentUser;
+      userStatus.textContent = "active now";
+    };
+
+    if (currentUser) {
+      showUser();
+    } else {
+      showLogin();
     }
-
-    async function sendMessageHandler() {
-      const text = messageInput.value.trim();
-      if (!text) return;
-
-      await addDoc(collection(db, "chatMessages"), {
-        text,
-        username: localStorage.getItem("username"),
-        timestamp: serverTimestamp()
-      });
-      messageInput.value = "";
-    }
-
-    function showChat() {
-      authSection.classList.add("hidden");
-      chatSection.classList.remove("hidden");
-      currentUser.textContent = localStorage.getItem("username");
-    }
-
-    signupBtn.addEventListener("click", async () => {
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value.trim();
-      if (!username || !password) return alert("Enter both name and password");
-
-      localStorage.setItem("username", username);
-      localStorage.setItem("password", password);
-      showChat();
-    });
 
     loginBtn.addEventListener("click", () => {
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value.trim();
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value.trim();
 
-      if (localStorage.getItem("username") === username && localStorage.getItem("password") === password) {
-        showChat();
-      } else {
-        alert("Invalid name or password");
-      }
+      if (!username || !password) return alert("Enter both name and password");
+
+      currentUser = username;
+      localStorage.setItem("username", username);
+      showUser();
     });
 
     logoutBtn.addEventListener("click", () => {
       localStorage.removeItem("username");
-      localStorage.removeItem("password");
-      location.reload();
+      currentUser = null;
+      userStatus.textContent = "offline";
+      showLogin();
     });
 
-    sendMessage.addEventListener("click", sendMessageHandler);
-
-    // Listen for messages
-    const q = query(collection(db, "chatMessages"), orderBy("timestamp"));
-    onSnapshot(q, (snapshot) => {
-      chatBox.innerHTML = "";
-      snapshot.forEach(doc => {
-        const msg = doc.data();
-        const time = msg.timestamp?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || "";
-        const isAdmin = msg.username.toLowerCase() === "admin";
-        const msgHTML = `
-          <div class="mb-2">
-            <span class="font-semibold ${isAdmin ? 'text-red-600' : 'text-green-700'}">${msg.username}</span>
-            <span class="text-gray-500 text-xs ml-2">${time}</span>
-            <p>${msg.text}</p>
-          </div>
-        `;
-        chatBox.innerHTML += msgHTML;
+    sendBtn.addEventListener("click", async () => {
+      const message = messageInput.value.trim();
+      if (!message || !currentUser) return;
+      await addDoc(collection(db, "chats"), {
+        message,
+        sender: currentUser,
+        createdAt: serverTimestamp(),
+        reactions: {}
       });
-      scrollToBottom();
+      messageInput.value = "";
+    });
+
+    onSnapshot(query(collection(db, "chats"), orderBy("createdAt", "asc")), (snapshot) => {
+      chatBox.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const msgDiv = document.createElement("div");
+        msgDiv.className = `border p-2 rounded ${data.sender === "admin" ? 'bg-yellow-100' : 'bg-gray-100'}`;
+
+        const meta = document.createElement("div");
+        meta.className = "text-xs text-gray-600 mb-1 flex justify-between items-center";
+        meta.innerHTML = `<span><strong>${data.sender}</strong></span><span>${data.createdAt?.toDate().toLocaleString() || ''}</span>`;
+
+        const content = document.createElement("p");
+        content.textContent = data.message;
+
+        const reactDiv = document.createElement("div");
+        reactDiv.className = "mt-1 space-x-2 text-lg";
+        ["❤️","😂","🔥"].forEach(emoji => {
+          const btn = document.createElement("button");
+          btn.textContent = emoji;
+          btn.onclick = () => {
+            const reactions = data.reactions || {};
+            reactions[emoji] = (reactions[emoji] || 0) + 1;
+            docSnap.ref.update({ reactions });
+          };
+          reactDiv.appendChild(btn);
+        });
+
+        const reactionCounts = Object.entries(data.reactions || {}).map(([emoji, count]) => `${emoji} ${count}`).join("  ");
+        const displayReacts = document.createElement("div");
+        displayReacts.className = "text-sm text-gray-500 mt-1";
+        displayReacts.textContent = reactionCounts;
+
+        if (currentUser === "admin") {
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "🗑️";
+          delBtn.className = "ml-2 text-red-600 text-sm";
+          delBtn.onclick = async () => await deleteDoc(doc(db, "chats", docSnap.id));
+          meta.appendChild(delBtn);
+        }
+
+        msgDiv.appendChild(meta);
+        msgDiv.appendChild(content);
+        msgDiv.appendChild(reactDiv);
+        msgDiv.appendChild(displayReacts);
+        chatBox.appendChild(msgDiv);
+      });
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+
+    emojiBtn.addEventListener("click", () => {
+      const picker = document.createElement("emoji-picker");
+      picker.addEventListener("emoji-click", e => {
+        messageInput.value += e.detail.unicode;
+        picker.remove();
+      });
+      document.body.appendChild(picker);
     });
   </script></body>
 </html>
