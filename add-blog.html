@@ -1,25 +1,72 @@
-/**
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Add Blog Post - Izuchukwu Foods</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+  <div class="max-w-3xl mx-auto bg-white shadow-lg rounded-lg p-6">
+    <h1 class="text-2xl font-bold mb-6 text-green-700 text-center">Add New Blog Post</h1>
+    <form id="postForm" class="space-y-4">
+      <input type="text" id="title" placeholder="Post Title" required class="w-full p-3 border border-gray-300 rounded" />
+      <textarea id="content" rows="6" placeholder="Post Content" required class="w-full p-3 border border-gray-300 rounded"></textarea>
+      <button type="submit" class="bg-green-700 text-white px-6 py-3 rounded hover:bg-green-800 w-full">Publish Post</button>
+    </form>
+    <p id="status" class="text-center text-sm mt-4 text-gray-600"></p>
+  </div>
 
-add-blog.js - Handles posting new blog articles to Firebase Firestore */
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+    const firebaseConfig = {
+      apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
+      authDomain: "izuchukwu-foods.firebaseapp.com",
+      projectId: "izuchukwu-foods",
+      storageBucket: "izuchukwu-foods.firebasestorage.app",
+      messagingSenderId: "811147638426",
+      appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123"
+    };
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"; import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-const firebaseConfig = { apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk", authDomain: "izuchukwu-foods.firebaseapp.com", projectId: "izuchukwu-foods", storageBucket: "izuchukwu-foods.firebasestorage.app", messagingSenderId: "811147638426", appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123" };
+    const postForm = document.getElementById("postForm");
+    const status = document.getElementById("status");
 
-const app = initializeApp(firebaseConfig); const db = getFirestore(app);
+    postForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const title = document.getElementById("title").value.trim();
+      const content = document.getElementById("content").value.trim();
+      const author = localStorage.getItem("username") || "Anonymous";
 
-const postForm = document.getElementById("postForm");
+      if (!title || !content) {
+        status.textContent = "Please fill in all fields.";
+        return;
+      }
 
-postForm.addEventListener("submit", async (e) => { e.preventDefault(); const title = document.getElementById("title").value.trim(); const content = document.getElementById("content").value.trim(); const author = localStorage.getItem("username") || "Anonymous"; const userId = localStorage.getItem("userId") || Date.now().toString();
+      try {
+        await addDoc(collection(db, "posts"), {
+          title,
+          content,
+          author,
+          createdAt: serverTimestamp()
+        });
 
-if (!title || !content) return alert("Please fill in all fields");
-
-try { await addDoc(collection(db, "posts"), { title, content, author, userId, createdAt: serverTimestamp() });
-
-alert("Post added successfully!");
-postForm.reset();
-// Stay on page since this is admin dashboard
-
-} catch (err) { console.error("Error adding post:", err); alert("Failed to add post. Try again."); } });
-
+        status.textContent = "✅ Post added successfully!";
+        postForm.reset();
+      } catch (err) {
+        console.error("Error adding post:", err);
+        status.textContent = "❌ Failed to add post. Try again.";
+      }
+    });
+  </script>
+</body>
+</html>
