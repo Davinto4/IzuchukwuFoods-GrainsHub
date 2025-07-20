@@ -1,15 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Global Chat – Izuchukwu Foods</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100">
-
-  <!-- Navbar -->
-  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
+<body class="bg-gray-100">  <!-- Navbar -->  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
     <a href="index.html" class="text-xl font-bold">Izuchukwu Foods</a>
     <div class="space-x-6 text-sm font-medium">
       <a href="index.html" class="hover:underline">Home</a>
@@ -18,34 +14,26 @@
       <a href="blog.html" class="hover:underline">Blog</a>
       <a href="chat.html" class="hover:underline">Global Chat</a>
     </div>
-  </nav>
-
-  <!-- Chat Header -->
-  <header class="h-48 bg-fixed bg-center bg-cover flex items-center justify-center" style="background-image: url('images/flyer.jpg');">
+  </nav>  <!-- Chat Header -->  <header class="h-48 bg-fixed bg-center bg-cover flex items-center justify-center" style="background-image: url('images/flyer.jpg');">
     <h1 class="text-white text-4xl font-bold bg-black bg-opacity-50 px-4 py-2 rounded">Global Chat</h1>
-  </header>
+  </header>  <!-- Chat Container -->  <main class="max-w-3xl mx-auto mt-8 p-4 bg-white shadow rounded">
+    <div class="flex justify-between items-center mb-6 flex-wrap gap-2">
+      <div class="flex items-center space-x-2">
+        <span class="text-sm text-gray-700">Your name:</span>
+        <input type="text" id="usernameInput" class="border px-2 py-1 text-sm rounded w-32" />
+        <button id="saveNameBtn" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">Save</button>
+      </div>
+      <button id="clearDataBtn" class="bg-red-600 text-white px-3 py-1 rounded text-sm hover:bg-red-700">Delete Name/ID</button>
+    </div><div id="messages" class="space-y-3 mb-6 max-h-96 overflow-y-auto"></div>
 
-  <!-- Chat Container -->
-  <main class="max-w-3xl mx-auto mt-8 p-4 bg-white shadow rounded">
-    <div class="flex justify-between items-center mb-4">
-      <h2 class="text-xl font-semibold text-green-700">Live Chat</h2>
-      <span class="text-sm text-gray-600">You are: <strong id="currentUser"></strong></span>
-    </div>
+<div class="flex gap-2">
+  <input id="messageInput" type="text" placeholder="Type your message... 😊" class="flex-grow border px-4 py-2 rounded"/>
+  <button id="sendBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Send</button>
+</div>
 
-    <div id="messages" class="space-y-3 mb-6 max-h-96 overflow-y-auto"></div>
-
-    <div class="flex gap-2">
-      <input id="messageInput" type="text" placeholder="Type your message..." class="flex-grow border px-4 py-2 rounded"/>
-      <button id="sendBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Send</button>
-    </div>
-  </main>
-
-  <footer class="bg-green-700 text-white text-center py-6 mt-10">
+  </main>  <footer class="bg-green-700 text-white text-center py-6 mt-10">
     <p class="text-sm">&copy; 2025 Izuchukwu Foods. All rights reserved.</p>
-  </footer>
-
-  <!-- Firebase & Chat Logic -->
-  <script type="module">
+  </footer>  <!-- Firebase & Chat Logic -->  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, addDoc, onSnapshot, orderBy, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
@@ -62,7 +50,7 @@
     const db = getFirestore(app);
     const chatRef = collection(db, "globalChat");
 
-    // Helper: Unique ID system
+    // Helpers
     function getUserID() {
       let id = localStorage.getItem("userID");
       if (!id) {
@@ -81,7 +69,29 @@
       return name;
     }
 
-    document.getElementById("currentUser").textContent = getUsername();
+    function setUsername(newName) {
+      localStorage.setItem("username", newName);
+    }
+
+    // Set name input
+    const usernameInput = document.getElementById("usernameInput");
+    usernameInput.value = getUsername();
+
+    document.getElementById("saveNameBtn").addEventListener("click", () => {
+      const newName = usernameInput.value.trim();
+      if (newName) {
+        setUsername(newName);
+        alert("Your name has been updated!");
+      }
+    });
+
+    // Clear all data
+    document.getElementById("clearDataBtn").addEventListener("click", () => {
+      localStorage.removeItem("userID");
+      localStorage.removeItem("username");
+      alert("Your ID and name have been cleared. Reloading page...");
+      location.reload();
+    });
 
     // Send message
     document.getElementById("sendBtn").addEventListener("click", async () => {
@@ -106,16 +116,24 @@
       messagesDiv.innerHTML = "";
       snapshot.forEach(doc => {
         const msg = doc.data();
+        const date = msg.createdAt?.toDate?.();
+        const time = date ? date.toLocaleString() : "";
+
         const div = document.createElement("div");
-        div.className = "p-3 border rounded bg-gray-50";
+        div.className = `p-3 border rounded bg-gray-50`;
+
+        const isAdmin = msg.username === "admin";
         div.innerHTML = `
-          <p class="text-sm text-gray-700"><strong>${msg.username}:</strong></p>
-          <p class="text-base text-gray-900">${msg.text}</p>
+          <p class="text-sm ${isAdmin ? 'text-red-700 font-bold' : 'text-gray-700'}">
+            <strong>${msg.username}${isAdmin ? ' (Admin)' : ''}:</strong>
+            <span class="text-xs text-gray-500 ml-2">${time}</span>
+          </p>
+          <p class="text-base text-gray-900 whitespace-pre-wrap">${msg.text}</p>
         `;
+
         messagesDiv.appendChild(div);
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
       });
     });
-  </script>
-</body>
+  </script></body>
 </html>
