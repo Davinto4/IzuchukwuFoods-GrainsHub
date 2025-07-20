@@ -1,32 +1,46 @@
-<!DOCTYPE html><html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Global Chat – Izuchukwu Foods</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.2/dist/index.min.css">
-  <script type="module" src="/js/chat.js" defer></script>
-</head>
-<body class="bg-gray-100 flex flex-col min-h-screen">  <!-- ✅ Navbar -->  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
-    <a href="index.html" class="text-xl font-bold">Izuchukwu Foods</a>
-    <div class="space-x-6 text-sm font-medium">
-      <a href="index.html" class="hover:underline">Home</a>
-      <a href="products.html" class="hover:underline">Products</a>
-      <a href="about.html" class="hover:underline">About</a>
-      <a href="blog.html" class="hover:underline">Blog</a>
-      <a href="chat.html" class="hover:underline">Global Chat</a>
-    </div>
-  </nav>  <!-- Chat Header -->  <header class="bg-white shadow py-4 px-6 flex justify-between items-center">
-    <h2 class="text-2xl font-semibold text-green-700">Global Chat Room</h2>
-    <div class="flex items-center space-x-4">
-      <div class="text-sm">Logged in as <strong id="loggedInUser" class="text-green-700"></strong></div>
-      <button id="logoutBtn" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm">Logout</button>
-    </div>
-  </header>  <!-- Chat Messages Section -->  <main class="flex-1 overflow-y-auto p-4" id="chatMessages">
-    <!-- Messages load here -->
-  </main>  <!-- Typing Indicator -->  <div id="typingIndicator" class="text-sm text-gray-500 px-4 pb-1 hidden">Someone is typing...</div>  <!-- Chat Input -->  <footer class="bg-white shadow p-4 flex items-center">
-    <button id="emojiBtn" class="mr-2 text-xl">😊</button>
-    <input type="text" id="chatInput" placeholder="Type your message..." class="flex-1 border border-gray-300 px-4 py-2 rounded mr-2"/>
-    <button id="sendBtn" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Send</button>
-  </footer>  <!-- Emoji Picker Script -->  <script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.2/dist/index.min.js"></script></body>
-</html>
+// chat.js import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"; import { getFirestore, collection, addDoc, getDocs, query, where, onSnapshot, serverTimestamp, doc, deleteDoc, setDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = { apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk", authDomain: "izuchukwu-foods.firebaseapp.com", projectId: "izuchukwu-foods", storageBucket: "izuchukwu-foods.firebasestorage.app", messagingSenderId: "811147638426", appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123" };
+
+const app = initializeApp(firebaseConfig); const db = getFirestore(app);
+
+const loginPanel = document.getElementById("loginPanel"); const userPanel = document.getElementById("userPanel"); const usernameInput = document.getElementById("username"); const passwordInput = document.getElementById("password"); const loginBtn = document.getElementById("loginBtn"); const logoutBtn = document.getElementById("logoutBtn"); const loggedInUser = document.getElementById("loggedInUser"); const userStatus = document.getElementById("userStatus");
+
+const chatBox = document.getElementById("chatBox"); const messageInput = document.getElementById("messageInput"); const sendBtn = document.getElementById("sendBtn"); const typingIndicator = document.getElementById("typingIndicator"); const onlineCount = document.getElementById("onlineCount"); const onlineList = document.getElementById("onlineList");
+
+let currentUser = null; let typingTimeout;
+
+async function setOnline(username, online) { await setDoc(doc(db, "online", username), { username, online, lastActive: serverTimestamp() }); }
+
+loginBtn.onclick = async () => { const username = usernameInput.value.trim(); const password = passwordInput.value.trim();
+
+if (!username || !password) return alert("Enter both name and password");
+
+const q = query(collection(db, "users"), where("username", "==", username)); const snapshot = await getDocs(q);
+
+if (!snapshot.empty) { const user = snapshot.docs[0].data(); if (user.password !== password) return alert("Incorrect password"); } else { await addDoc(collection(db, "users"), { username, password }); }
+
+const isTaken = await getDocs(query(collection(db, "online"), where("username", "==", username))); if (!isTaken.empty && isTaken.docs[0].data().online) { return alert("This user is already online."); }
+
+currentUser = username; localStorage.setItem("username", username); loggedInUser.textContent = username; loginPanel.classList.add("hidden"); userPanel.classList.remove("hidden"); userStatus.textContent = "online"; await setOnline(username, true); };
+
+logoutBtn.onclick = async () => { await setOnline(currentUser, false); localStorage.removeItem("username"); location.reload(); };
+
+function renderMessage(doc) { const data = doc.data(); const div = document.createElement("div"); div.className = "border-b pb-2"; div.innerHTML = <strong>${data.username}</strong>: ${data.message} <span class="text-xs text-gray-400">${new Date(data.timestamp?.seconds * 1000).toLocaleTimeString()}</span>;
+
+if (currentUser === "admin") { const del = document.createElement("button"); del.textContent = "🗑️"; del.className = "ml-2 text-red-600 hover:underline text-sm"; del.onclick = async () => { await deleteDoc(doc.ref); await addDoc(collection(db, "modLogs"), { action: "delete", message: data.message, by: currentUser, timestamp: serverTimestamp() }); }; div.appendChild(del); }
+
+chatBox.appendChild(div); chatBox.scrollTop = chatBox.scrollHeight; }
+
+sendBtn.onclick = async () => { const msg = messageInput.value.trim(); if (!msg) return; await addDoc(collection(db, "messages"), { username: currentUser, message: msg, timestamp: serverTimestamp() }); messageInput.value = ""; };
+
+messageInput.addEventListener("input", () => { if (!currentUser) return; setDoc(doc(db, "typing", currentUser), { username: currentUser, typing: true, timestamp: serverTimestamp() });
+
+clearTimeout(typingTimeout); typingTimeout = setTimeout(() => { setDoc(doc(db, "typing", currentUser), { username: currentUser, typing: false, timestamp: serverTimestamp() }); }, 2000); });
+
+onSnapshot(collection(db, "messages"), (snapshot) => { chatBox.innerHTML = ""; snapshot.docs.sort((a, b) => a.data().timestamp?.seconds - b.data().timestamp?.seconds).forEach(renderMessage); });
+
+onSnapshot(collection(db, "online"), (snapshot) => { const users = snapshot.docs.filter(doc => doc.data().online).map(doc => doc.id); onlineCount.textContent = users.length; onlineList.textContent = users.join(", "); });
+
+onSnapshot(collection(db, "typing"), (snapshot) => { const typers = snapshot.docs.filter(doc => doc.data().typing && doc.id !== currentUser).map(doc => doc.id); typingIndicator.textContent = typers.length ? ${typers.join(", ")} is typing... : ""; });
+
