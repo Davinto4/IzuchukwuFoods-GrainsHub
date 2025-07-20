@@ -22,6 +22,7 @@
         <input type="text" id="username" placeholder="Enter name" class="w-full border p-2 rounded">
         <input type="password" id="password" placeholder="Enter password" class="w-full border p-2 rounded">
         <button id="loginBtn" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800 w-full">Login</button>
+        <p class="text-center text-sm">Don't have an account? <a href="signup.html" class="text-green-600 hover:underline">Sign up</a></p>
       </div>
       <div id="userPanel" class="hidden justify-between items-center mt-4">
         <span class="text-sm">Logged in as <strong id="loggedInUser"></strong> (<span id="userStatus">offline</span>)</span>
@@ -49,11 +50,6 @@
     <input type="text" id="adminMessageInput" placeholder="Type a message to admin..." class="flex-grow border rounded px-4 py-2">
     <button id="sendAdminBtn" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Send</button>
   </div>
-</div>
-
-<div class="mt-10">
-  <h3 class="font-semibold text-lg mb-2">Moderation</h3>
-  <ul id="moderationLog" class="text-sm text-red-700 list-disc list-inside"></ul>
 </div>
 
   </main>  <footer class="bg-green-700 text-white text-center py-4 mt-10">
