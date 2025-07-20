@@ -10,21 +10,21 @@
 
   <div class="bg-white p-8 rounded shadow-lg w-full max-w-md">
     <h2 class="text-2xl font-bold mb-6 text-center text-green-700">Create an Account</h2>
-    
+
     <form id="signupForm" class="space-y-4">
-      <input type="text" id="username" placeholder="Enter your name" required class="w-full p-3 border rounded"/>
-      <input type="password" id="password" placeholder="Enter password" required class="w-full p-3 border rounded"/>
+      <input type="text" id="username" placeholder="Your name" required class="w-full p-3 border rounded"/>
+      <input type="password" id="password" placeholder="Password" required class="w-full p-3 border rounded"/>
       <button type="submit" class="w-full bg-green-700 text-white p-3 rounded hover:bg-green-800">Sign Up</button>
     </form>
 
-    <p class="text-sm text-center mt-4">Already have an account? 
+    <p class="text-sm text-center mt-4">Already have an account?
       <a href="login.html" class="text-green-600 hover:underline">Login</a>
     </p>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
@@ -45,23 +45,23 @@
       const username = document.getElementById('username').value.trim();
       const password = document.getElementById('password').value.trim();
 
-      // Check if username exists
-      const usersRef = collection(db, 'users');
-      const q = query(usersRef, where("username", "==", username));
-      const querySnapshot = await getDocs(q);
-
-      if (!querySnapshot.empty) {
-        alert("Username already exists. Try another.");
+      const q = query(collection(db, "users"), where("username", "==", username));
+      const existing = await getDocs(q);
+      if (!existing.empty) {
+        alert("Username already exists. Please choose another.");
         return;
       }
 
-      try {
-        await addDoc(usersRef, { username, password });
-        localStorage.setItem("username", username);
-        window.location.href = "index.html"; // or redirect to dashboard
-      } catch (err) {
-        alert("Signup failed. Try again.");
-        console.error(err);
+      await addDoc(collection(db, "users"), {
+        username,
+        password
+      });
+
+      localStorage.setItem("username", username);
+      if (username.toLowerCase() === "admin") {
+        window.location.href = "admin.html";
+      } else {
+        window.location.href = "index.html";
       }
     });
   </script>
