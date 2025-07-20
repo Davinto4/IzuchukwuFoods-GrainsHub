@@ -1,49 +1,142 @@
 <!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Global Chat - Izuchukwu Foods</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-gray-50 text-gray-800">
-  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center">
-    <a href="index.html" class="text-xl font-bold">Izuchukwu Foods</a>
-    <div class="space-x-6 text-sm font-medium">
-      <a href="index.html" class="hover:underline">Home</a>
-      <a href="products.html" class="hover:underline">Products</a>
-      <a href="about.html" class="hover:underline">About</a>
-      <a href="blog.html" class="hover:underline">Blog</a>
-      <a href="chat.html" class="hover:underline font-bold underline">Global Chat</a>
-    </div>
-  </nav>  <main class="max-w-3xl mx-auto px-4 py-6">
-    <div id="authSection" class="mb-6">
-      <div id="loginPanel" class="space-y-4">
-        <input type="text" id="username" placeholder="Enter name" class="w-full border p-2 rounded">
-        <input type="password" id="password" placeholder="Enter password" class="w-full border p-2 rounded">
-        <button id="loginBtn" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800 w-full">Login</button>
-        <p class="text-sm text-center">Don't have an account?
-          <a href="signup.html" class="text-green-700 hover:underline">Sign up</a>
-        </p>
-      </div>
-      <div id="userPanel" class="hidden justify-between items-center mt-4">
-        <span class="text-sm">Logged in as <strong id="loggedInUser"></strong></span>
-        <button id="logoutBtn" class="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700 text-sm">Logout</button>
-      </div>
-    </div><div class="mb-2 text-sm text-gray-600">Online users (<span id="onlineCount">0</span>): <span id="onlineList"></span></div>
-<div class="text-sm text-blue-600 mb-2" id="typingIndicator"></div>
+  <main class="max-w-2xl mx-auto px-4 py-8">
+    <h1 class="text-2xl font-bold mb-6 text-green-700 text-center">Izuchukwu Foods - Global Chat</h1><div id="authSection" class="bg-white shadow rounded p-4 mb-6">
+  <div id="signupSection" class="mb-4">
+    <h2 class="font-semibold mb-2">Sign Up</h2>
+    <input type="text" id="signupName" placeholder="Your name" class="border p-2 w-full mb-2 rounded" />
+    <input type="password" id="signupPassword" placeholder="Password" class="border p-2 w-full mb-2 rounded" />
+    <button id="signupBtn" class="bg-green-700 hover:bg-green-800 text-white px-4 py-2 w-full rounded">Sign Up</button>
+  </div>
+  <div id="loginSection">
+    <h2 class="font-semibold mb-2">Login</h2>
+    <input type="text" id="loginName" placeholder="Your name" class="border p-2 w-full mb-2 rounded" />
+    <input type="password" id="loginPassword" placeholder="Password" class="border p-2 w-full mb-2 rounded" />
+    <button id="loginBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 w-full rounded">Login</button>
+  </div>
+</div>
 
-<div class="mb-4">
-  <h3 class="font-semibold text-lg mb-2">Public Chat</h3>
-  <div id="chatBox" class="bg-white border rounded p-4 h-96 overflow-y-auto space-y-4 mb-4"></div>
+<div id="chatArea" class="hidden">
+  <div class="flex justify-between items-center mb-4">
+    <p class="text-sm">Logged in as <strong id="currentUser"></strong></p>
+    <button id="logoutBtn" class="text-red-600 text-sm">Logout</button>
+  </div>
 
-  <div class="flex items-center space-x-2">
-    <input type="text" id="messageInput" placeholder="Type your message..." class="flex-grow border rounded px-4 py-2">
+  <div class="border rounded p-4 h-96 overflow-y-auto mb-4 bg-white" id="chatBox"></div>
+
+  <div class="flex gap-2">
+    <input type="text" id="messageInput" placeholder="Type your message..." class="flex-grow border rounded px-4 py-2" />
     <button id="sendBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
   </div>
 </div>
 
-  </main>  <footer class="bg-green-700 text-white text-center py-4 mt-10">
-    <p class="text-sm">&copy; 2025 Izuchukwu Foods. All rights reserved.</p>
-  </footer>  <script type="module" src="/chat.js"></script></body>
+  </main>  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, where, onSnapshot, doc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
+      authDomain: "izuchukwu-foods.firebaseapp.com",
+      projectId: "izuchukwu-foods",
+      storageBucket: "izuchukwu-foods.firebasestorage.app",
+      messagingSenderId: "811147638426",
+      appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const signupBtn = document.getElementById("signupBtn");
+    const loginBtn = document.getElementById("loginBtn");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const sendBtn = document.getElementById("sendBtn");
+
+    let currentUser = null;
+    const usersRef = collection(db, "chatUsers");
+    const messagesRef = collection(db, "chatMessages");
+
+    signupBtn.onclick = async () => {
+      const name = document.getElementById("signupName").value.trim();
+      const password = document.getElementById("signupPassword").value.trim();
+      if (!name || !password) return alert("Please fill both fields");
+
+      const check = await getDocs(query(usersRef, where("name", "==", name)));
+      if (!check.empty) return alert("Username already exists");
+
+      await addDoc(usersRef, { name, password });
+      alert("Account created! Now login.");
+    };
+
+    loginBtn.onclick = async () => {
+      const name = document.getElementById("loginName").value.trim();
+      const password = document.getElementById("loginPassword").value.trim();
+      if (!name || !password) return alert("Enter name and password");
+
+      const userSnap = await getDocs(query(usersRef, where("name", "==", name), where("password", "==", password)));
+      if (userSnap.empty) return alert("Invalid credentials");
+
+      currentUser = name;
+      document.getElementById("authSection").classList.add("hidden");
+      document.getElementById("chatArea").classList.remove("hidden");
+      document.getElementById("currentUser").textContent = name;
+    };
+
+    logoutBtn.onclick = () => {
+      currentUser = null;
+      document.getElementById("authSection").classList.remove("hidden");
+      document.getElementById("chatArea").classList.add("hidden");
+    };
+
+    sendBtn.onclick = async () => {
+      const message = document.getElementById("messageInput").value.trim();
+      if (!message || !currentUser) return;
+      await addDoc(messagesRef, {
+        name: currentUser,
+        text: message,
+        time: Date.now()
+      });
+      document.getElementById("messageInput").value = "";
+    };
+
+    onSnapshot(messagesRef, (snapshot) => {
+      const chatBox = document.getElementById("chatBox");
+      chatBox.innerHTML = "";
+      snapshot.docs.sort((a, b) => a.data().time - b.data().time).forEach(docSnap => {
+        const { name, text, time } = docSnap.data();
+        const div = document.createElement("div");
+        const isAdmin = currentUser === "admin";
+        const isMine = name === currentUser;
+        const date = new Date(time).toLocaleTimeString();
+
+        div.className = "bg-gray-100 p-2 rounded flex justify-between items-center";
+        div.innerHTML = `
+          <div>
+            <strong class="${name === 'admin' ? 'text-red-600' : 'text-green-700'}">${name}</strong>
+            <span class="text-xs text-gray-500 ml-2">${date}</span>
+            <p>${text}</p>
+          </div>
+          ${isAdmin || isMine ? `<button data-id="${docSnap.id}" class="text-red-500 deleteBtn">Delete</button>` : ""}
+        `;
+
+        chatBox.appendChild(div);
+      });
+
+      document.querySelectorAll(".deleteBtn").forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.getAttribute("data-id");
+          if (confirm("Delete this message?")) {
+            await deleteDoc(doc(db, "chatMessages", id));
+          }
+        }
+      });
+
+      chatBox.scrollTop = chatBox.scrollHeight;
+    });
+  </script></body>
 </html>
