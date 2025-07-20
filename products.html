@@ -45,7 +45,7 @@
   <!-- Product Grid -->
   <div id="product-list" class="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 hidden"></div>
 
-  <!-- Firebase + Script -->
+  <!-- Firebase Script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -66,19 +66,6 @@
     const loading = document.getElementById("loading");
     const searchInput = document.getElementById("searchInput");
 
-    const defaultImages = {
-      "Spaghetti": "https://via.placeholder.com/300x200?text=Spaghetti",
-      "Macaroni": "https://via.placeholder.com/300x200?text=Macaroni",
-      "Rice": "https://via.placeholder.com/300x200?text=Rice",
-      "Wheat": "https://via.placeholder.com/300x200?text=Wheat",
-      "Semolina": "https://via.placeholder.com/300x200?text=Semolina",
-      "Vegetable oil": "https://via.placeholder.com/300x200?text=Vegetable+Oil",
-      "Spices": "https://via.placeholder.com/300x200?text=Spices",
-      "Tomato paste": "https://via.placeholder.com/300x200?text=Tomato+Paste",
-      "Noodles": "https://via.placeholder.com/300x200?text=Noodles",
-      "Detergents": "https://via.placeholder.com/300x200?text=Detergents"
-    };
-
     let allProducts = [];
 
     async function fetchProducts() {
@@ -87,9 +74,7 @@
         allProducts = [];
 
         querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          const image = data.image || defaultImages[data.name] || "https://via.placeholder.com/300x200?text=Product";
-          allProducts.push({ ...data, image });
+          allProducts.push(doc.data());
         });
 
         renderProducts(allProducts);
