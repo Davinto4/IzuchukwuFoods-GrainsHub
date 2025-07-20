@@ -20,17 +20,22 @@
     <div class="bg-white p-6 rounded shadow mb-6">
       <h2 class="text-2xl font-bold mb-2">Blog Posts</h2>
       <div id="postsList" class="space-y-4"></div>
-    </div><div class="bg-white p-6 rounded shadow mb-6">
-  <h2 class="text-xl font-semibold mb-4">Leave a Comment</h2>
-  <form id="commentForm" class="space-y-4">
-    <textarea id="commentText" rows="3" placeholder="Write your comment..." class="w-full border p-2 rounded" required></textarea>
-    <button type="submit" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Post Comment</button>
-  </form>
-</div>
+    </div><div id="postDetails" class="bg-white p-6 rounded shadow mb-6 hidden">
+  <h2 id="postTitle" class="text-xl font-semibold mb-2"></h2>
+  <p id="postContent" class="mb-4"></p>
 
-<div class="bg-white p-6 rounded shadow">
-  <h2 class="text-xl font-semibold mb-4">Comments</h2>
-  <div id="commentsList" class="space-y-4"></div>
+  <div class="mb-4">
+    <h3 class="text-lg font-semibold mb-2">Leave a Comment</h3>
+    <form id="commentForm" class="space-y-4">
+      <textarea id="commentText" rows="3" placeholder="Write your comment..." class="w-full border p-2 rounded" required></textarea>
+      <button type="submit" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Post Comment</button>
+    </form>
+  </div>
+
+  <div>
+    <h3 class="text-lg font-semibold mb-2">Comments</h3>
+    <div id="commentsList" class="space-y-4"></div>
+  </div>
 </div>
 
   </main>  <footer class="bg-green-700 text-white text-center py-4 mt-10">
