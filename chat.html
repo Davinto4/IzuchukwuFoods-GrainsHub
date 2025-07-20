@@ -5,10 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Global Chat – Izuchukwu Foods</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.2/dist/index.min.css">
+  <script type="module" src="/js/chat.js" defer></script>
 </head>
-<body class="bg-gray-100">
+<body class="bg-gray-100 flex flex-col min-h-screen">
 
-  <!-- Navbar -->
+  <!-- ✅ Navbar -->
   <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
     <a href="index.html" class="text-xl font-bold">Izuchukwu Foods</a>
     <div class="space-x-6 text-sm font-medium">
@@ -21,118 +23,30 @@
   </nav>
 
   <!-- Chat Header -->
-  <header class="h-48 bg-fixed bg-center bg-cover flex items-center justify-center" style="background-image: url('images/flyer.jpg');">
-    <h1 class="text-white text-4xl font-bold bg-black bg-opacity-50 px-4 py-2 rounded">Global Chat</h1>
+  <header class="bg-white shadow py-4 px-6 flex justify-between items-center">
+    <h2 class="text-2xl font-semibold text-green-700">Global Chat Room</h2>
+    <div class="flex items-center space-x-4">
+      <div class="text-sm">Logged in as <strong id="loggedInUser" class="text-green-700"></strong></div>
+      <button id="logoutBtn" class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm">Logout</button>
+    </div>
   </header>
 
-  <!-- Chat Container -->
-  <main class="max-w-3xl mx-auto mt-8 p-4 bg-white shadow rounded">
-    <div class="flex justify-between items-center mb-6">
-      <div class="flex items-center space-x-2">
-        <span class="text-sm text-gray-700">Your name:</span>
-        <input type="text" id="usernameInput" class="border px-2 py-1 text-sm rounded w-32" />
-        <button id="saveNameBtn" class="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700">Save</button>
-      </div>
-    </div>
-
-    <div id="messages" class="space-y-3 mb-6 max-h-96 overflow-y-auto"></div>
-
-    <div class="flex gap-2">
-      <input id="messageInput" type="text" placeholder="Type your message..." class="flex-grow border px-4 py-2 rounded"/>
-      <button id="sendBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Send</button>
-    </div>
+  <!-- Chat Messages Section -->
+  <main class="flex-1 overflow-y-auto p-4" id="chatMessages">
+    <!-- Messages load here -->
   </main>
 
-  <footer class="bg-green-700 text-white text-center py-6 mt-10">
-    <p class="text-sm">&copy; 2025 Izuchukwu Foods. All rights reserved.</p>
+  <!-- Typing Indicator -->
+  <div id="typingIndicator" class="text-sm text-gray-500 px-4 pb-1 hidden">Someone is typing...</div>
+
+  <!-- Chat Input -->
+  <footer class="bg-white shadow p-4 flex items-center">
+    <button id="emojiBtn" class="mr-2 text-xl">😊</button>
+    <input type="text" id="chatInput" placeholder="Type your message..." class="flex-1 border border-gray-300 px-4 py-2 rounded mr-2"/>
+    <button id="sendBtn" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Send</button>
   </footer>
 
-  <!-- Firebase & Chat Logic -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, orderBy, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
-      authDomain: "izuchukwu-foods.firebaseapp.com",
-      projectId: "izuchukwu-foods",
-      storageBucket: "izuchukwu-foods.firebasestorage.app",
-      messagingSenderId: "811147638426",
-      appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-    const chatRef = collection(db, "globalChat");
-
-    // Helper functions
-    function getUserID() {
-      let id = localStorage.getItem("userID");
-      if (!id) {
-        id = crypto.randomUUID();
-        localStorage.setItem("userID", id);
-      }
-      return id;
-    }
-
-    function getUsername() {
-      let name = localStorage.getItem("username");
-      if (!name) {
-        name = "User_" + Math.floor(Math.random() * 10000);
-        localStorage.setItem("username", name);
-      }
-      return name;
-    }
-
-    function setUsername(newName) {
-      localStorage.setItem("username", newName);
-    }
-
-    // Display current username in input
-    const usernameInput = document.getElementById("usernameInput");
-    usernameInput.value = getUsername();
-
-    document.getElementById("saveNameBtn").addEventListener("click", () => {
-      const newName = usernameInput.value.trim();
-      if (newName) {
-        setUsername(newName);
-        alert("Your name has been updated!");
-      }
-    });
-
-    // Send message
-    document.getElementById("sendBtn").addEventListener("click", async () => {
-      const input = document.getElementById("messageInput");
-      const text = input.value.trim();
-      if (text) {
-        await addDoc(chatRef, {
-          text,
-          createdAt: serverTimestamp(),
-          userID: getUserID(),
-          username: getUsername()
-        });
-        input.value = "";
-      }
-    });
-
-    // Display messages
-    const messagesDiv = document.getElementById("messages");
-    const chatQuery = query(chatRef, orderBy("createdAt", "asc"));
-
-    onSnapshot(chatQuery, (snapshot) => {
-      messagesDiv.innerHTML = "";
-      snapshot.forEach(doc => {
-        const msg = doc.data();
-        const div = document.createElement("div");
-        div.className = "p-3 border rounded bg-gray-50";
-        div.innerHTML = `
-          <p class="text-sm text-gray-700"><strong>${msg.username}:</strong></p>
-          <p class="text-base text-gray-900">${msg.text}</p>
-        `;
-        messagesDiv.appendChild(div);
-        messagesDiv.scrollTop = messagesDiv.scrollHeight;
-      });
-    });
-  </script>
+  <!-- Emoji Picker Script -->
+  <script src="https://cdn.jsdelivr.net/npm/@joeattardi/emoji-button@4.6.2/dist/index.min.js"></script>
 </body>
 </html>
