@@ -3,12 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Izuchukwu Foods - Products</title>
+  <title>Products - Izuchukwu Foods</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
 </head>
-<body class="bg-gray-100 text-gray-800">
+<body class="bg-gray-100">
 
-  <!-- Navbar -->
   <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
     <a href="index.html" class="text-xl font-bold">Izuchukwu Foods</a>
     <div class="space-x-6 text-sm font-medium">
@@ -18,40 +17,51 @@
     </div>
   </nav>
 
-  <!-- Header -->
-  <header class="text-center py-6">
-    <h1 class="text-3xl font-bold">Our Products</h1>
-    <p class="text-sm text-gray-600">Affordable & Quality Food and Household Essentials</p>
-  </header>
-
-  <!-- Product Grid -->
-  <div class="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-    <!-- Product Items -->
-    <script>
-      const products = [
-        "Spaghetti", "Macaroni", "Rice", "Wheat", "Semolina",
-        "Vegetable Oil", "Spices", "Tomato Paste", "Noodles", "Detergents"
-      ];
-
-      const container = document.currentScript.parentElement;
-      products.forEach(name => {
-        container.innerHTML += `
-          <div class="bg-white shadow-md rounded-lg overflow-hidden p-4">
-            <img src="https://via.placeholder.com/300x200?text=${encodeURIComponent(name)}"
-                 alt="${name}" class="w-full h-40 object-cover rounded">
-            <div class="mt-4">
-              <h2 class="text-lg font-semibold">${name}</h2>
-              <a href="https://wa.me/2349038441549?text=I%20want%20to%20order%20${encodeURIComponent(name)}"
-                 target="_blank"
-                 class="inline-block mt-2 bg-green-600 text-white px-3 py-1 rounded text-sm">
-                Order on WhatsApp
-              </a>
-            </div>
-          </div>
-        `;
-      });
-    </script>
+  <div class="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="product-list">
+    <!-- Products will be inserted here -->
   </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
+      authDomain: "izuchukwu-foods.firebaseapp.com",
+      projectId: "izuchukwu-foods",
+      storageBucket: "izuchukwu-foods.firebasestorage.app",
+      messagingSenderId: "811147638426",
+      appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const productList = document.getElementById("product-list");
+
+    async function fetchProducts() {
+      try {
+        const querySnapshot = await getDocs(collection(db, "products"));
+        querySnapshot.forEach((doc) => {
+          const p = doc.data();
+          const card = `
+            <div class="bg-white p-4 rounded shadow">
+              <img src="${p.image}" alt="${p.name}" class="w-full h-40 object-cover rounded">
+              <h2 class="text-lg font-bold mt-2">${p.name}</h2>
+              <a href="https://wa.me/2349038441549?text=I%20want%20to%20order%20${encodeURIComponent(p.name)}"
+                 class="text-green-600 inline-block mt-1 text-sm">Order on WhatsApp</a>
+            </div>
+          `;
+          productList.innerHTML += card;
+        });
+      } catch (error) {
+        console.error("Error loading products:", error);
+        productList.innerHTML = "<p class='col-span-full text-center text-red-600'>Failed to load products.</p>";
+      }
+    }
+
+    fetchProducts();
+  </script>
 
 </body>
 </html>
