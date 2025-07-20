@@ -1,49 +1,54 @@
-// chat.js
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Global Chat - Izuchukwu Foods</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.css">
+  <script type="module" src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1"></script>
+</head>
+<body class="bg-gray-50 text-gray-800">
+  <!-- Navbar -->
+  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
+    <a href="index.html" class="text-xl font-bold">Izuchukwu Foods</a>
+    <div class="space-x-6 text-sm font-medium">
+      <a href="index.html" class="hover:underline">Home</a>
+      <a href="products.html" class="hover:underline">Products</a>
+      <a href="about.html" class="hover:underline">About</a>
+      <a href="blog.html" class="hover:underline">Blog</a>
+      <a href="chat.html" class="hover:underline">Global Chat</a>
+    </div>
+  </nav>  <main class="max-w-3xl mx-auto px-4 py-10">
+    <h2 class="text-2xl font-bold mb-4">Global Chat</h2><!-- Auth Panel -->
+<div id="authPanel" class="mb-6">
+  <div class="space-y-4">
+    <input type="text" id="username" placeholder="Enter your name" class="border px-4 py-2 rounded w-full" />
+    <input type="password" id="password" placeholder="Enter password" class="border px-4 py-2 rounded w-full" />
+    <button id="loginBtn" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800 w-full">Login</button>
+  </div>
+</div>
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"; import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+<!-- Chat Section -->
+<div id="chatSection" class="hidden">
+  <div class="mb-4 flex justify-between items-center">
+    <span>Logged in as <strong id="displayName"></strong> <span id="onlineStatus" class="text-sm text-green-600"></span></span>
+    <button id="logoutBtn" class="text-red-600 text-sm hover:underline">Logout</button>
+  </div>
 
-const firebaseConfig = { apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk", authDomain: "izuchukwu-foods.firebaseapp.com", projectId: "izuchukwu-foods", storageBucket: "izuchukwu-foods.firebasestorage.app", messagingSenderId: "811147638426", appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123" };
+  <div id="typingIndicator" class="text-sm text-gray-500 italic mb-2 hidden">Someone is typing...</div>
 
-const app = initializeApp(firebaseConfig); const db = getFirestore(app);
+  <div id="messages" class="border p-4 h-80 overflow-y-auto bg-white rounded shadow space-y-2"></div>
 
-const chatBox = document.getElementById("chatBox"); const messageInput = document.getElementById("messageInput"); const sendBtn = document.getElementById("sendBtn"); const typingIndicator = document.getElementById("typingIndicator");
+  <div class="mt-4 flex items-center space-x-2">
+    <input type="text" id="messageInput" placeholder="Type a message..." class="flex-1 border px-4 py-2 rounded" />
+    <button id="emojiBtn" class="text-2xl">😊</button>
+    <button id="sendBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
+  </div>
 
-let username = localStorage.getItem("username") || "";
+  <emoji-picker id="emojiPicker" class="absolute z-50 hidden"></emoji-picker>
+</div>
 
-if (!username) { username = prompt("Enter your name:"); if (!username) username = "Guest" + Math.floor(Math.random() * 10000); localStorage.setItem("username", username); }
-
-document.getElementById("loggedInUser").textContent = username;
-
-const messagesRef = collection(db, "chatMessages"); const typingRef = collection(db, "typing");
-
-sendBtn.addEventListener("click", async () => { const content = messageInput.value.trim(); if (content === "") return;
-
-await addDoc(messagesRef, { username, content, createdAt: serverTimestamp(), });
-
-messageInput.value = ""; await addDoc(typingRef, { username, typing: false }); });
-
-messageInput.addEventListener("input", async () => { await addDoc(typingRef, { username, typing: messageInput.value.length > 0 }); });
-
-onSnapshot(query(messagesRef, orderBy("createdAt")), (snapshot) => { chatBox.innerHTML = ""; snapshot.forEach((docSnap) => { const { username: user, content, createdAt } = docSnap.data(); const messageDiv = document.createElement("div"); const isAdmin = username.toLowerCase() === "admin"; const isMine = user === username;
-
-const time = createdAt?.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) || "";
-messageDiv.className = `p-3 rounded-lg mb-2 max-w-md ${isMine ? "bg-green-100 self-end" : "bg-white self-start"}`;
-messageDiv.innerHTML = `
-  <div class="text-sm font-bold">${user}</div>
-  <div class="text-base">${content}</div>
-  <div class="text-xs text-gray-500 mt-1">${time}</div>
-  ${isAdmin ? `<button class="text-xs text-red-600 mt-1 deleteBtn" data-id="${docSnap.id}">Delete</button>` : ""}
-`;
-
-chatBox.appendChild(messageDiv);
-
-}); chatBox.scrollTop = chatBox.scrollHeight; });
-
-chatBox.addEventListener("click", async (e) => { if (e.target.classList.contains("deleteBtn")) { const messageId = e.target.dataset.id; await deleteDoc(doc(db, "chatMessages", messageId)); } });
-
-onSnapshot(query(typingRef, orderBy("username")), (snapshot) => { let typingUsers = []; snapshot.forEach(doc => { const data = doc.data(); if (data.typing && data.username !== username) { typingUsers.push(data.username); } });
-
-typingIndicator.textContent = typingUsers.length ? ${typingUsers.join(", ")} typing... : ""; });
-
-document.getElementById("logoutBtn").addEventListener("click", () => { localStorage.removeItem("username"); location.reload(); });
-
+  </main>  <footer class="bg-green-700 text-white text-center py-6 mt-10">
+    <p class="text-sm">&copy; 2025 Izuchukwu Foods. All rights reserved.</p>
+  </footer>  <script type="module" src="/js/chat.js"></script></body>
+</html>
