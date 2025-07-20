@@ -3,53 +3,37 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Izuchukwu Foods - Products</title>
+  <title>Add Products - Admin</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet"/>
 </head>
 <body class="bg-gray-100 text-gray-800">
 
-  <!-- Navbar -->
-  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
-    <a href="index.html" class="text-xl font-bold">Izuchukwu Foods</a>
-    <div class="space-x-6 text-sm font-medium">
-      <a href="index.html" class="hover:underline">Home</a>
-      <a href="products.html" class="hover:underline">Products</a>
-      <a href="about.html" class="hover:underline">About</a>
-    </div>
-  </nav>
+  <div class="max-w-xl mx-auto mt-10 p-6 bg-white shadow rounded">
+    <h1 class="text-2xl font-bold mb-4">Add Product</h1>
 
-  <!-- Header -->
-  <header class="text-center py-6">
-    <h1 class="text-3xl font-bold">Our Products</h1>
-    <p class="text-sm text-gray-500 mt-2">Browse foodstuffs, spices, and household essentials</p>
-  </header>
-
-  <!-- Search Bar -->
-  <div class="max-w-4xl mx-auto px-4 mb-6">
-    <input
-      type="text"
-      id="searchInput"
-      placeholder="Search by name or category..."
-      class="w-full p-3 border rounded-lg focus:outline-none focus:ring focus:border-green-500"
-    />
+    <input id="name" type="text" placeholder="Product Name" class="w-full p-2 border rounded mb-3"/>
+    <input id="category" type="text" placeholder="Category" class="w-full p-2 border rounded mb-3"/>
+    <button id="addBtn" class="bg-green-600 text-white px-4 py-2 rounded">Add Product</button>
+    
+    <p id="status" class="text-sm mt-3 text-gray-600"></p>
   </div>
 
-  <!-- Loading Spinner -->
-  <div id="loading" class="text-center py-10">
-    <svg class="animate-spin h-8 w-8 text-green-700 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-      <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-      <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-    </svg>
-    <p class="text-gray-600 mt-2">Loading products...</p>
+  <div class="max-w-3xl mx-auto mt-10 p-6 bg-white shadow rounded">
+    <h2 class="text-xl font-semibold mb-4">Product List</h2>
+    <ul id="productList" class="space-y-4"></ul>
   </div>
 
-  <!-- Product Grid -->
-  <div id="product-list" class="p-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 hidden"></div>
-
-  <!-- Firebase Script -->
+  <!-- Firebase -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getFirestore,
+      collection,
+      addDoc,
+      getDocs,
+      deleteDoc,
+      doc
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
@@ -62,64 +46,57 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const productCol = collection(db, "products");
 
-    const productList = document.getElementById("product-list");
-    const loading = document.getElementById("loading");
-    const searchInput = document.getElementById("searchInput");
-
-    let allProducts = [];
+    const nameInput = document.getElementById("name");
+    const categoryInput = document.getElementById("category");
+    const addBtn = document.getElementById("addBtn");
+    const status = document.getElementById("status");
+    const productList = document.getElementById("productList");
 
     async function fetchProducts() {
-      try {
-        const querySnapshot = await getDocs(collection(db, "products"));
-        allProducts = [];
+      const snapshot = await getDocs(productCol);
+      productList.innerHTML = "";
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const li = document.createElement("li");
+        li.className = "flex justify-between items-center border p-3 rounded";
 
-        querySnapshot.forEach((doc) => {
-          const data = doc.data();
-          allProducts.push({
-            name: data.name || "Unnamed Product",
-            category: data.category || "General"
-          });
+        li.innerHTML = `
+          <div>
+            <p class="font-semibold">${data.name}</p>
+            <p class="text-sm text-gray-500">${data.category}</p>
+          </div>
+          <button class="bg-red-500 text-white px-3 py-1 text-sm rounded" data-id="${docSnap.id}">
+            Delete
+          </button>
+        `;
+
+        li.querySelector("button").addEventListener("click", async () => {
+          const confirmDelete = confirm(`Delete "${data.name}"?`);
+          if (confirmDelete) {
+            await deleteDoc(doc(db, "products", docSnap.id));
+            fetchProducts(); // Refresh list
+          }
         });
 
-        renderProducts(allProducts);
-        loading.style.display = "none";
-        productList.classList.remove("hidden");
-      } catch (error) {
-        loading.innerHTML = "<p class='text-red-500'>Failed to load products. Check Firebase setup.</p>";
-        console.error("Error fetching products:", error);
-      }
-    }
-
-    function renderProducts(products) {
-      productList.innerHTML = "";
-
-      if (products.length === 0) {
-        productList.innerHTML = "<p class='text-center text-gray-600 col-span-full'>No products found.</p>";
-        return;
-      }
-
-      products.forEach(product => {
-        const card = `
-          <div class="bg-white shadow rounded-lg overflow-hidden p-4">
-            <h3 class="text-lg font-semibold">${product.name}</h3>
-            <p class="text-sm text-gray-500 mb-2">${product.category}</p>
-            <a href="https://wa.me/2349038441549?text=I%20want%20to%20order%20${encodeURIComponent(product.name)}"
-               target="_blank"
-               class="inline-block bg-green-600 text-white text-sm px-3 py-1 rounded">Order on WhatsApp</a>
-          </div>
-        `;
-        productList.innerHTML += card;
+        productList.appendChild(li);
       });
     }
 
-    searchInput.addEventListener("input", () => {
-      const keyword = searchInput.value.toLowerCase();
-      const filtered = allProducts.filter(p =>
-        p.name.toLowerCase().includes(keyword) ||
-        p.category.toLowerCase().includes(keyword)
-      );
-      renderProducts(filtered);
+    addBtn.addEventListener("click", async () => {
+      const name = nameInput.value.trim();
+      const category = categoryInput.value.trim() || "General";
+      if (!name) {
+        status.textContent = "Please enter a product name.";
+        return;
+      }
+
+      await addDoc(productCol, { name, category });
+      nameInput.value = "";
+      categoryInput.value = "";
+      status.textContent = "Product added!";
+      fetchProducts(); // Refresh list
     });
 
     fetchProducts();
