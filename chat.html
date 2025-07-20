@@ -27,153 +27,36 @@
         <span class="text-sm">Logged in as <strong id="loggedInUser"></strong> (<span id="userStatus">offline</span>)</span>
         <button id="logoutBtn" class="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700 text-sm">Logout</button>
       </div>
-    </div><div id="chatBox" class="bg-white border rounded p-4 h-96 overflow-y-auto space-y-4 mb-4"></div>
+    </div><div class="mb-2 text-sm text-gray-600">Online users (<span id="onlineCount">0</span>): <span id="onlineList"></span></div>
+<div class="text-sm text-blue-600 mb-2" id="typingIndicator"></div>
 
-<div class="flex items-center space-x-2">
-  <input type="text" id="messageInput" placeholder="Type your message..." class="flex-grow border rounded px-4 py-2">
-  <button id="emojiBtn" class="text-xl">😊</button>
-  <button id="sendBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
+<div class="mb-4">
+  <h3 class="font-semibold text-lg mb-2">Public Chat</h3>
+  <div id="chatBox" class="bg-white border rounded p-4 h-96 overflow-y-auto space-y-4 mb-4"></div>
+
+  <div class="flex items-center space-x-2">
+    <input type="text" id="messageInput" placeholder="Type your message..." class="flex-grow border rounded px-4 py-2">
+    <button id="emojiBtn" class="text-xl">😊</button>
+    <button id="sendBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Send</button>
+  </div>
+</div>
+
+<div class="mt-8">
+  <h3 class="font-semibold text-lg mb-2">Chat with Admin</h3>
+  <div id="adminChatBox" class="bg-white border rounded p-4 h-64 overflow-y-auto space-y-4 mb-4"></div>
+
+  <div class="flex items-center space-x-2">
+    <input type="text" id="adminMessageInput" placeholder="Type a message to admin..." class="flex-grow border rounded px-4 py-2">
+    <button id="sendAdminBtn" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Send</button>
+  </div>
+</div>
+
+<div class="mt-10">
+  <h3 class="font-semibold text-lg mb-2">Moderation</h3>
+  <ul id="moderationLog" class="text-sm text-red-700 list-disc list-inside"></ul>
 </div>
 
   </main>  <footer class="bg-green-700 text-white text-center py-4 mt-10">
     <p class="text-sm">&copy; 2025 Izuchukwu Foods. All rights reserved.</p>
-  </footer>  <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js" type="module"></script>  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
-      authDomain: "izuchukwu-foods.firebaseapp.com",
-      projectId: "izuchukwu-foods",
-      storageBucket: "izuchukwu-foods.firebasestorage.app",
-      messagingSenderId: "811147638426",
-      appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    const loginBtn = document.getElementById("loginBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const usernameInput = document.getElementById("username");
-    const passwordInput = document.getElementById("password");
-    const loggedInUser = document.getElementById("loggedInUser");
-    const userStatus = document.getElementById("userStatus");
-
-    const authSection = document.getElementById("authSection");
-    const loginPanel = document.getElementById("loginPanel");
-    const userPanel = document.getElementById("userPanel");
-    const chatBox = document.getElementById("chatBox");
-    const sendBtn = document.getElementById("sendBtn");
-    const messageInput = document.getElementById("messageInput");
-    const emojiBtn = document.getElementById("emojiBtn");
-
-    let currentUser = localStorage.getItem("username") || null;
-
-    const showLogin = () => {
-      loginPanel.classList.remove("hidden");
-      userPanel.classList.add("hidden");
-    };
-
-    const showUser = () => {
-      loginPanel.classList.add("hidden");
-      userPanel.classList.remove("hidden");
-      loggedInUser.textContent = currentUser;
-      userStatus.textContent = "active now";
-    };
-
-    if (currentUser) {
-      showUser();
-    } else {
-      showLogin();
-    }
-
-    loginBtn.addEventListener("click", () => {
-      const username = usernameInput.value.trim();
-      const password = passwordInput.value.trim();
-
-      if (!username || !password) return alert("Enter both name and password");
-
-      currentUser = username;
-      localStorage.setItem("username", username);
-      showUser();
-    });
-
-    logoutBtn.addEventListener("click", () => {
-      localStorage.removeItem("username");
-      currentUser = null;
-      userStatus.textContent = "offline";
-      showLogin();
-    });
-
-    sendBtn.addEventListener("click", async () => {
-      const message = messageInput.value.trim();
-      if (!message || !currentUser) return;
-      await addDoc(collection(db, "chats"), {
-        message,
-        sender: currentUser,
-        createdAt: serverTimestamp(),
-        reactions: {}
-      });
-      messageInput.value = "";
-    });
-
-    onSnapshot(query(collection(db, "chats"), orderBy("createdAt", "asc")), (snapshot) => {
-      chatBox.innerHTML = "";
-      snapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        const msgDiv = document.createElement("div");
-        msgDiv.className = `border p-2 rounded ${data.sender === "admin" ? 'bg-yellow-100' : 'bg-gray-100'}`;
-
-        const meta = document.createElement("div");
-        meta.className = "text-xs text-gray-600 mb-1 flex justify-between items-center";
-        meta.innerHTML = `<span><strong>${data.sender}</strong></span><span>${data.createdAt?.toDate().toLocaleString() || ''}</span>`;
-
-        const content = document.createElement("p");
-        content.textContent = data.message;
-
-        const reactDiv = document.createElement("div");
-        reactDiv.className = "mt-1 space-x-2 text-lg";
-        ["❤️","😂","🔥"].forEach(emoji => {
-          const btn = document.createElement("button");
-          btn.textContent = emoji;
-          btn.onclick = () => {
-            const reactions = data.reactions || {};
-            reactions[emoji] = (reactions[emoji] || 0) + 1;
-            docSnap.ref.update({ reactions });
-          };
-          reactDiv.appendChild(btn);
-        });
-
-        const reactionCounts = Object.entries(data.reactions || {}).map(([emoji, count]) => `${emoji} ${count}`).join("  ");
-        const displayReacts = document.createElement("div");
-        displayReacts.className = "text-sm text-gray-500 mt-1";
-        displayReacts.textContent = reactionCounts;
-
-        if (currentUser === "admin") {
-          const delBtn = document.createElement("button");
-          delBtn.textContent = "🗑️";
-          delBtn.className = "ml-2 text-red-600 text-sm";
-          delBtn.onclick = async () => await deleteDoc(doc(db, "chats", docSnap.id));
-          meta.appendChild(delBtn);
-        }
-
-        msgDiv.appendChild(meta);
-        msgDiv.appendChild(content);
-        msgDiv.appendChild(reactDiv);
-        msgDiv.appendChild(displayReacts);
-        chatBox.appendChild(msgDiv);
-      });
-      chatBox.scrollTop = chatBox.scrollHeight;
-    });
-
-    emojiBtn.addEventListener("click", () => {
-      const picker = document.createElement("emoji-picker");
-      picker.addEventListener("emoji-click", e => {
-        messageInput.value += e.detail.unicode;
-        picker.remove();
-      });
-      document.body.appendChild(picker);
-    });
-  </script></body>
+  </footer>  <script src="https://cdn.jsdelivr.net/npm/emoji-picker-element@^1/index.js" type="module"></script>  <script type="module" src="/chat.js"></script></body>
 </html>
