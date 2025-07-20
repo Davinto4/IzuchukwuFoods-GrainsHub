@@ -1,13 +1,14 @@
-<!DOCTYPE html><html lang="en">
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Global Chat – Izuchukwu Foods</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script type="module" src="/js/chat.js" defer></script>
 </head>
-<body class="bg-gray-50 text-gray-800">
-  <!-- ✅ Navbar -->
+<body class="bg-gray-100">
+
+  <!-- Navbar -->
   <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
     <a href="index.html" class="text-xl font-bold">Izuchukwu Foods</a>
     <div class="space-x-6 text-sm font-medium">
@@ -17,38 +18,104 @@
       <a href="blog.html" class="hover:underline">Blog</a>
       <a href="chat.html" class="hover:underline">Global Chat</a>
     </div>
-  </nav>  <!-- Chat Banner -->  <header class="h-60 bg-fixed bg-center bg-cover flex items-center justify-center" style="background-image: url('images/flyer.jpg');">
-    <h1 class="text-white text-4xl font-bold bg-black bg-opacity-50 px-4 py-2 rounded">Global Chat</h1>
-  </header>  <!-- Chat Section -->  <main class="max-w-3xl mx-auto px-4 py-10">
-    <!-- Auth Section -->
-    <div id="authSection" class="mb-6">
-      <div id="authForms" class="space-y-4">
-        <div>
-          <input type="text" id="authUsername" placeholder="Enter your name" class="border px-4 py-2 rounded w-full" />
-        </div>
-        <div>
-          <input type="password" id="authPassword" placeholder="Enter your password" class="border px-4 py-2 rounded w-full" />
-        </div>
-        <div class="flex space-x-2">
-          <button id="signupBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Sign Up</button>
-          <button id="loginBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Log In</button>
-        </div>
-      </div>
-      <div id="userPanel" class="hidden flex justify-between items-center mt-4">
-        <span class="text-sm">Logged in as <strong id="loggedInUser"></strong></span>
-        <button id="logoutBtn" class="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700 text-sm">Logout</button>
-      </div>
-    </div><!-- Chat Box -->
-<div id="chatSection" class="hidden">
-  <div id="chatMessages" class="h-64 overflow-y-auto bg-white p-4 border rounded mb-4 space-y-2"></div>
-  <form id="chatForm" class="flex gap-2">
-    <input type="text" id="chatInput" placeholder="Type a message..." class="flex-1 border px-4 py-2 rounded" required />
-    <button type="submit" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Send</button>
-  </form>
-</div>
+  </nav>
 
-  </main>  <!-- Footer -->  <footer class="bg-green-700 text-white text-center py-6 mt-10">
+  <!-- Chat Header -->
+  <header class="h-48 bg-fixed bg-center bg-cover flex items-center justify-center" style="background-image: url('images/flyer.jpg');">
+    <h1 class="text-white text-4xl font-bold bg-black bg-opacity-50 px-4 py-2 rounded">Global Chat</h1>
+  </header>
+
+  <!-- Chat Container -->
+  <main class="max-w-3xl mx-auto mt-8 p-4 bg-white shadow rounded">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-semibold text-green-700">Live Chat</h2>
+      <span class="text-sm text-gray-600">You are: <strong id="currentUser"></strong></span>
+    </div>
+
+    <div id="messages" class="space-y-3 mb-6 max-h-96 overflow-y-auto"></div>
+
+    <div class="flex gap-2">
+      <input id="messageInput" type="text" placeholder="Type your message..." class="flex-grow border px-4 py-2 rounded"/>
+      <button id="sendBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Send</button>
+    </div>
+  </main>
+
+  <footer class="bg-green-700 text-white text-center py-6 mt-10">
     <p class="text-sm">&copy; 2025 Izuchukwu Foods. All rights reserved.</p>
   </footer>
+
+  <!-- Firebase & Chat Logic -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, orderBy, query, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
+      authDomain: "izuchukwu-foods.firebaseapp.com",
+      projectId: "izuchukwu-foods",
+      storageBucket: "izuchukwu-foods.firebasestorage.app",
+      messagingSenderId: "811147638426",
+      appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const chatRef = collection(db, "globalChat");
+
+    // Helper: Unique ID system
+    function getUserID() {
+      let id = localStorage.getItem("userID");
+      if (!id) {
+        id = crypto.randomUUID();
+        localStorage.setItem("userID", id);
+      }
+      return id;
+    }
+
+    function getUsername() {
+      let name = localStorage.getItem("username");
+      if (!name) {
+        name = "User_" + Math.floor(Math.random() * 10000);
+        localStorage.setItem("username", name);
+      }
+      return name;
+    }
+
+    document.getElementById("currentUser").textContent = getUsername();
+
+    // Send message
+    document.getElementById("sendBtn").addEventListener("click", async () => {
+      const input = document.getElementById("messageInput");
+      const text = input.value.trim();
+      if (text) {
+        await addDoc(chatRef, {
+          text,
+          createdAt: serverTimestamp(),
+          userID: getUserID(),
+          username: getUsername()
+        });
+        input.value = "";
+      }
+    });
+
+    // Display messages
+    const messagesDiv = document.getElementById("messages");
+    const chatQuery = query(chatRef, orderBy("createdAt", "asc"));
+
+    onSnapshot(chatQuery, (snapshot) => {
+      messagesDiv.innerHTML = "";
+      snapshot.forEach(doc => {
+        const msg = doc.data();
+        const div = document.createElement("div");
+        div.className = "p-3 border rounded bg-gray-50";
+        div.innerHTML = `
+          <p class="text-sm text-gray-700"><strong>${msg.username}:</strong></p>
+          <p class="text-base text-gray-900">${msg.text}</p>
+        `;
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      });
+    });
+  </script>
 </body>
 </html>
