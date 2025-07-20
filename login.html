@@ -1,25 +1,30 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Login - Izuchukwu Foods</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 flex items-center justify-center h-screen">
-  <div class="bg-white p-6 rounded shadow w-full max-w-sm">
-    <h2 class="text-xl font-bold text-center mb-4">Login</h2>
-    <form id="login-form" class="space-y-4">
-      <input type="text" id="username" placeholder="Your name" required class="w-full p-2 border rounded" />
-      <input type="password" id="password" placeholder="Password" required class="w-full p-2 border rounded" />
-      <button type="submit" class="w-full bg-green-700 text-white py-2 rounded hover:bg-green-800">Login</button>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">  <div class="bg-white shadow-md rounded-lg p-8 w-full max-w-md">
+    <h2 class="text-2xl font-bold text-center text-green-700 mb-6">Login</h2>
+    <form id="loginForm" class="space-y-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Name</label>
+        <input type="text" id="name" required class="mt-1 p-3 w-full border rounded-md focus:outline-none focus:ring focus:ring-green-300" />
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700">Password</label>
+        <input type="password" id="password" required class="mt-1 p-3 w-full border rounded-md focus:outline-none focus:ring focus:ring-green-300" />
+      </div>
+      <button type="submit" class="w-full bg-green-600 text-white p-3 rounded hover:bg-green-700">Login</button>
     </form>
-    <p class="text-center text-sm mt-4">No account? <a href="signup.html" class="text-green-600 underline">Sign Up</a></p>
-  </div>
-
-  <script type="module">
+    <p class="text-center text-sm text-gray-600 mt-4">
+      Don't have an account?
+      <a href="signup.html" class="text-green-600 hover:underline">Sign up</a>
+    </p>
+  </div>  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
@@ -33,25 +38,31 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const form = document.getElementById("login-form");
-
-    form.addEventListener("submit", async (e) => {
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
       e.preventDefault();
-      const username = document.getElementById("username").value.trim();
-      const password = document.getElementById("password").value;
+      const name = document.getElementById('name').value.trim();
+      const password = document.getElementById('password').value;
 
-      const userRef = doc(db, "users", username);
-      const docSnap = await getDoc(userRef);
+      try {
+        const usersSnapshot = await getDocs(collection(db, 'users'));
+        let found = false;
 
-      if (!docSnap.exists() || docSnap.data().password !== password) {
-        alert("Invalid username or password.");
-        return;
+        usersSnapshot.forEach((doc) => {
+          const user = doc.data();
+          if (user.name === name && user.password === password) {
+            found = true;
+            localStorage.setItem('username', name);
+            window.location.href = 'index.html';
+          }
+        });
+
+        if (!found) {
+          alert('Invalid name or password.');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        alert('Login failed.');
       }
-
-      localStorage.setItem("username", username);
-      alert("Login successful!");
-      window.location.href = "index.html"; // Or blog/chat/etc
     });
-  </script>
-</body>
+  </script></body>
 </html>
