@@ -1,82 +1,32 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Blog – Izuchukwu Foods</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script type="module" src="/js/blog.js" defer></script>
-</head>
-<body class="bg-gray-50 text-gray-800">
-
-  <!-- ✅ Navbar -->
-  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
-    <a href="index.html" class="text-xl font-bold">Izuchukwu Foods</a>
-    <div class="space-x-6 text-sm font-medium">
-      <a href="index.html" class="hover:underline">Home</a>
-      <a href="products.html" class="hover:underline">Products</a>
-      <a href="about.html" class="hover:underline">About</a>
-      <a href="blog.html" class="hover:underline">Blog</a>
-      <a href="chat.html" class="hover:underline">Global Chat</a>
+<!-- Important Updates in Main Section -->
+<main class="max-w-4xl mx-auto px-4 py-10">
+  <!-- Auth Panel -->
+  <div id="authSection" class="mb-6">
+    <div id="authForms" class="space-y-4">
+      <div>
+        <input type="text" id="authUsername" placeholder="Enter your name" class="border px-4 py-2 rounded w-full" />
+      </div>
+      <div>
+        <input type="password" id="authPassword" placeholder="Enter your password" class="border px-4 py-2 rounded w-full" />
+      </div>
+      <div class="flex space-x-2">
+        <button id="signupBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Sign Up</button>
+        <button id="loginBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Log In</button>
+      </div>
     </div>
-  </nav>
-
-  <!-- Blog Header -->
-  <header class="h-60 bg-fixed bg-center bg-cover flex items-center justify-center" style="background-image: url('images/flyer.jpg');">
-    <h1 class="text-white text-4xl font-bold bg-black bg-opacity-50 px-4 py-2 rounded">Our Blog</h1>
-  </header>
-
-  <!-- Blog Main Section -->
-  <main class="max-w-4xl mx-auto px-4 py-10">
-
-    <!-- Auth Display -->
-    <div id="userPanel" class="flex justify-between items-center mb-6 hidden">
+    <div id="userPanel" class="hidden flex justify-between items-center mt-4">
       <span class="text-sm">Logged in as <strong id="loggedInUser"></strong></span>
       <button id="logoutBtn" class="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700 text-sm">Logout</button>
     </div>
+  </div>
 
-    <!-- Add Blog Post (Admin Only) -->
-    <div id="addPostSection" class="mb-8 hidden">
-      <a href="add-blog.html" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Add New Post</a>
-    </div>
+  <!-- Add Blog Post (Admin Only) -->
+  <div class="mb-8 hidden" id="addPostSection">
+    <a href="add-blog.html" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Add New Post</a>
+  </div>
 
-    <!-- Blog List -->
-    <section id="blogList" class="space-y-6">
-      <!-- Blog posts will load here -->
-    </section>
-  </main>
-
-  <!-- Footer -->
-  <footer class="bg-green-700 text-white text-center py-6">
-    <p class="text-sm">&copy; 2025 Izuchukwu Foods. All rights reserved.</p>
-  </footer>
-
-  <script type="module">
-    import { getAuthUser, logout } from '/js/auth.js'; // Ensure this handles auth check
-
-    const user = getAuthUser();
-    const userPanel = document.getElementById('userPanel');
-    const loggedInUser = document.getElementById('loggedInUser');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const addPostSection = document.getElementById('addPostSection');
-
-    if (!user) {
-      // Redirect if not logged in
-      window.location.href = "login.html";
-    } else {
-      userPanel.classList.remove("hidden");
-      loggedInUser.textContent = user.username;
-
-      // Show "Add Post" if admin
-      if (user.isAdmin) {
-        addPostSection.classList.remove("hidden");
-      }
-    }
-
-    logoutBtn.addEventListener('click', () => {
-      logout();
-      window.location.href = "login.html";
-    });
-  </script>
-</body>
-</html>
+  <!-- Blog List -->
+  <section id="blogList" class="space-y-6 hidden">
+    <!-- Blog posts will be injected here by JS -->
+  </section>
+</main>
