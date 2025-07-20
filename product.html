@@ -13,25 +13,48 @@
     <h1 class="text-lg font-bold">Izuchukwu Foods</h1>
     <div class="space-x-4 text-sm">
       <a href="index.html" class="hover:underline">Home</a>
-      <a href="products.html" class="hover:underline">Products</a>
+      <a href="products.html" class="hover:underline font-semibold">Products</a>
       <a href="about.html" class="hover:underline">About</a>
     </div>
   </nav>
 
-  <!-- Products Section -->
+  <!-- Main Content -->
   <main class="max-w-6xl mx-auto py-10 px-4">
-    <h2 class="text-3xl font-bold mb-8 text-center">Our Products</h2>
-    <div id="productList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8"></div>
+    <h2 class="text-3xl font-bold mb-6 text-center">Our Products</h2>
+
+    <!-- Search & Filter -->
+    <div class="flex flex-col sm:flex-row gap-4 justify-between mb-6">
+      <input id="searchInput" type="text" placeholder="Search by name..."
+        class="w-full sm:w-1/2 p-2 border rounded shadow-sm" />
+
+      <select id="categoryFilter" class="w-full sm:w-1/4 p-2 border rounded shadow-sm">
+        <option value="all">All Categories</option>
+      </select>
+    </div>
+
+    <!-- Spinner -->
+    <div id="loadingSpinner" class="flex justify-center py-10">
+      <svg class="animate-spin h-8 w-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor"
+              d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z">
+        </path>
+      </svg>
+    </div>
+
+    <!-- Product Grid -->
+    <div id="productList" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 hidden"></div>
   </main>
 
   <!-- WhatsApp Order Button -->
   <div class="fixed bottom-6 right-6">
-    <a href="https://wa.me/2347012345678" target="_blank" class="bg-green-600 text-white px-4 py-3 rounded-full shadow-lg hover:bg-green-700">
+    <a href="https://wa.me/2347012345678" target="_blank"
+       class="bg-green-600 text-white px-4 py-3 rounded-full shadow-lg hover:bg-green-700">
       Order via WhatsApp
     </a>
   </div>
 
-  <!-- Firebase SDK + Product Loader -->
+  <!-- Firebase SDK + Script -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -48,31 +71,70 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    async function loadProducts() {
+    const productList = document.getElementById("productList");
+    const searchInput = document.getElementById("searchInput");
+    const categoryFilter = document.getElementById("categoryFilter");
+    const loadingSpinner = document.getElementById("loadingSpinner");
+
+    let allProducts = [];
+
+    async function fetchProducts() {
       const querySnapshot = await getDocs(collection(db, "products"));
-      const productList = document.getElementById("productList");
-      productList.innerHTML = "";
+      const products = [];
 
       querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        const productCard = `
-          <div class="bg-white rounded-lg shadow-md overflow-hidden">
-            <img src="${data.image}" alt="${data.name}" class="w-full h-48 object-cover">
-            <div class="p-4">
-              <h3 class="text-lg font-semibold">${data.name}</h3>
-              <p class="text-sm text-gray-600">${data.category}</p>
-              <a href="https://wa.me/2347012345678?text=I'm%20interested%20in%20${encodeURIComponent(data.name)}" 
-                 class="mt-3 inline-block bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm">
-                Order Now
-              </a>
-            </div>
-          </div>
-        `;
-        productList.insertAdjacentHTML("beforeend", productCard);
+        products.push({ id: doc.id, ...doc.data() });
+      });
+
+      allProducts = products;
+      populateCategories();
+      renderProducts();
+    }
+
+    function populateCategories() {
+      const categories = new Set(allProducts.map(p => p.category));
+      categories.forEach(cat => {
+        const option = document.createElement("option");
+        option.value = cat;
+        option.textContent = cat[0].toUpperCase() + cat.slice(1);
+        categoryFilter.appendChild(option);
       });
     }
 
-    loadProducts();
+    function renderProducts() {
+      const searchTerm = searchInput.value.toLowerCase();
+      const selectedCategory = categoryFilter.value;
+
+      const filtered = allProducts.filter(p => {
+        const matchesSearch = p.name.toLowerCase().includes(searchTerm);
+        const matchesCategory = selectedCategory === "all" || p.category === selectedCategory;
+        return matchesSearch && matchesCategory;
+      });
+
+      productList.innerHTML = filtered.map(product => `
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+          <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-cover">
+          <div class="p-4">
+            <h3 class="text-lg font-semibold">${product.name}</h3>
+            <p class="text-sm text-gray-600">${product.category}</p>
+            <a href="https://wa.me/2347012345678?text=I'm%20interested%20in%20${encodeURIComponent(product.name)}"
+               class="mt-3 inline-block bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 text-sm">
+              Order Now
+            </a>
+          </div>
+        </div>
+      `).join("");
+
+      loadingSpinner.classList.add("hidden");
+      productList.classList.remove("hidden");
+    }
+
+    // Events
+    searchInput.addEventListener("input", renderProducts);
+    categoryFilter.addEventListener("change", renderProducts);
+
+    // Load on startup
+    fetchProducts();
   </script>
 
 </body>
