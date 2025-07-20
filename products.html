@@ -1,10 +1,11 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Izuchukwu Foods – Products</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <style>
     .banner {
       background-image: url('images/flyer.jpg');
@@ -15,10 +16,7 @@
     }
   </style>
 </head>
-<body class="bg-gray-50 text-gray-800">
-
-  <!-- ✅ Navbar -->
-  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
+<body class="bg-gray-50 text-gray-800">  <!-- ✅ Navbar -->  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
     <a href="index.html" class="text-xl font-bold">Izuchukwu Foods</a>
     <div class="space-x-6 text-sm font-medium">
       <a href="index.html" class="hover:underline">Home</a>
@@ -27,32 +25,54 @@
       <a href="blog.html" class="hover:underline">Blog</a>
       <a href="chat.html" class="hover:underline">Global Chat</a>
     </div>
-  </nav>
-
-  <!-- 🖼️ Parallax Banner -->
-  <div class="banner"></div>
-
-  <!-- 📦 Product List -->
-  <section class="py-12 px-6 max-w-4xl mx-auto">
+  </nav>  <!-- 🖼️ Parallax Banner -->  <div class="banner"></div>  <!-- 📦 Product List -->  <section class="py-12 px-6 max-w-4xl mx-auto">
     <h2 class="text-3xl font-bold text-green-700 mb-6 text-center">Our Products</h2>
-    <ul class="grid grid-cols-1 sm:grid-cols-2 gap-6 text-lg text-gray-800">
-      <li class="bg-white shadow rounded p-4">Spaghetti</li>
-      <li class="bg-white shadow rounded p-4">Macaroni</li>
-      <li class="bg-white shadow rounded p-4">Rice</li>
-      <li class="bg-white shadow rounded p-4">Wheat</li>
-      <li class="bg-white shadow rounded p-4">Semolina</li>
-      <li class="bg-white shadow rounded p-4">Vegetable Oil</li>
-      <li class="bg-white shadow rounded p-4">Spices</li>
-      <li class="bg-white shadow rounded p-4">Tomato Paste</li>
-      <li class="bg-white shadow rounded p-4">Noodles</li>
-      <li class="bg-white shadow rounded p-4">Detergents</li>
-    </ul>
-  </section>
-
-  <!-- Footer -->
-  <footer class="bg-green-700 text-white text-center py-6 mt-12">
+    <ul id="productList" class="grid grid-cols-1 sm:grid-cols-2 gap-6 text-lg text-gray-800"></ul>
+  </section>  <!-- WhatsApp Button -->  <div class="fixed bottom-6 right-6 z-50">
+    <a id="whatsappButton" href="#" target="_blank" class="bg-green-600 text-white px-4 py-3 rounded-full shadow-lg flex items-center hover:bg-green-700">
+      <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M20.52 3.48a12.18 12.18 0 00-17.19 0 12.18 12.18 0 000 17.19l.62.61L2 22l1.72-.44.6.62a12.18 12.18 0 0017.2-17.2zm-4.75 10.82c-.23.64-1.36 1.26-1.88 1.32s-.8.16-2.7-.87c-2.28-1.18-3.76-3.94-3.88-4.12s-.92-1.26-.88-2.14.55-1.1.75-1.2.45-.2.6-.2.3-.03.45.01.34.02.5.36.64 1.52.7 1.63.12.25 0 .4a7.4 7.4 0 01-.56.67c-.14.16-.3.33-.14.64s1.15 2.02 2.79 2.73c1.62.7 1.7.47 2.02.44s.5-.2.64-.37.75-.86.94-1.16.39-.25.64-.17.91.45 1.06.54.26.13.29.2.03.76-.2 1.4z" />
+      </svg>
+      Order on WhatsApp
+    </a>
+  </div>  <!-- Footer -->  <footer class="bg-green-700 text-white text-center py-6 mt-12">
     <p class="text-sm">&copy; 2025 Izuchukwu Foods. All rights reserved.</p>
-  </footer>
+  </footer>  <script>
+    const firebaseConfig = {
+      apiKey: 'AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk',
+      authDomain: 'izuchukwu-foods.firebaseapp.com',
+      projectId: 'izuchukwu-foods',
+      storageBucket: 'izuchukwu-foods.appspot.com',
+      messagingSenderId: '811147638426',
+      appId: '1:811147638426:web:f2403b6cf7e0b6f19b1123'
+    };
 
-</body>
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    const productList = document.getElementById('productList');
+
+    function renderProducts(products) {
+      productList.innerHTML = '';
+      products.forEach(doc => {
+        const data = doc.data();
+        const li = document.createElement('li');
+        li.className = 'bg-white shadow rounded p-4';
+        li.textContent = data.name;
+        productList.appendChild(li);
+      });
+    }
+
+    db.collection('products').onSnapshot(snapshot => {
+      renderProducts(snapshot.docs);
+    });
+
+    // WhatsApp Button behavior
+    document.getElementById('whatsappButton').addEventListener('click', (e) => {
+      e.preventDefault();
+      const productNames = Array.from(productList.children).map(li => li.textContent.trim()).join(', ');
+      const url = `https://wa.me/2349012345678?text=I'm%20interested%20in%20the%20following%20products:%20${encodeURIComponent(productNames)}`;
+      window.open(url, '_blank');
+    });
+  </script></body>
 </html>
