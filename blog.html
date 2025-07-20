@@ -1,67 +1,39 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Blog – Izuchukwu Foods</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Izuchukwu Foods Blog</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script type="module" src="/js/blog.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 </head>
 <body class="bg-gray-50 text-gray-800">
-  <!-- ✅ Navbar -->
-  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
+  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center">
     <a href="index.html" class="text-xl font-bold">Izuchukwu Foods</a>
     <div class="space-x-6 text-sm font-medium">
       <a href="index.html" class="hover:underline">Home</a>
       <a href="products.html" class="hover:underline">Products</a>
       <a href="about.html" class="hover:underline">About</a>
-      <a href="blog.html" class="hover:underline">Blog</a>
+      <a href="blog.html" class="hover:underline font-bold">Blog</a>
       <a href="chat.html" class="hover:underline">Global Chat</a>
     </div>
-  </nav>
+  </nav>  <main class="max-w-4xl mx-auto px-4 py-8">
+    <div class="bg-white p-6 rounded shadow mb-6">
+      <h2 class="text-2xl font-bold mb-2">Blog Posts</h2>
+      <div id="postsList" class="space-y-4"></div>
+    </div><div class="bg-white p-6 rounded shadow mb-6">
+  <h2 class="text-xl font-semibold mb-4">Leave a Comment</h2>
+  <form id="commentForm" class="space-y-4">
+    <textarea id="commentText" rows="3" placeholder="Write your comment..." class="w-full border p-2 rounded" required></textarea>
+    <button type="submit" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Post Comment</button>
+  </form>
+</div>
 
-  <!-- Blog Header -->
-  <header class="h-60 bg-fixed bg-center bg-cover flex items-center justify-center" style="background-image: url('images/flyer.jpg');">
-    <h1 class="text-white text-4xl font-bold bg-black bg-opacity-50 px-4 py-2 rounded">Our Blog</h1>
-  </header>
+<div class="bg-white p-6 rounded shadow">
+  <h2 class="text-xl font-semibold mb-4">Comments</h2>
+  <div id="commentsList" class="space-y-4"></div>
+</div>
 
-  <!-- Blog Section -->
-  <main class="max-w-4xl mx-auto px-4 py-10">
-    <!-- Auth Panel -->
-    <div id="authSection" class="mb-6">
-      <div id="authForms" class="space-y-4">
-        <div>
-          <input type="text" id="authUsername" placeholder="Enter your name" class="border px-4 py-2 rounded w-full" />
-        </div>
-        <div>
-          <input type="password" id="authPassword" placeholder="Enter your password" class="border px-4 py-2 rounded w-full" />
-        </div>
-        <div class="flex space-x-2">
-          <button id="signupBtn" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Sign Up</button>
-          <button id="loginBtn" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Log In</button>
-        </div>
-      </div>
-      <div id="userPanel" class="hidden flex justify-between items-center mt-4">
-        <span class="text-sm">Logged in as <strong id="loggedInUser"></strong></span>
-        <button id="logoutBtn" class="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700 text-sm">Logout</button>
-      </div>
-    </div>
-
-    <!-- Add Blog Post (Admin Only) -->
-    <div class="mb-8 hidden" id="addPostSection">
-      <a href="add-blog.html" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Add New Post</a>
-    </div>
-
-    <!-- Blog List -->
-    <section id="blogList" class="space-y-6">
-      <!-- Blog posts will load here from Firebase -->
-    </section>
-  </main>
-
-  <!-- Footer -->
-  <footer class="bg-green-700 text-white text-center py-6">
+  </main>  <footer class="bg-green-700 text-white text-center py-4 mt-10">
     <p class="text-sm">&copy; 2025 Izuchukwu Foods. All rights reserved.</p>
-  </footer>
-
-</body>
+  </footer>  <script type="module" src="/blog.js"></script></body>
 </html>
