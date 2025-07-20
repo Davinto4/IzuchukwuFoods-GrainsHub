@@ -1,92 +1,25 @@
-<!DOCTYPE html><html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Add Blog - Izuchukwu Foods</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50 min-h-screen">
-  <nav class="bg-green-700 text-white p-4">
-    <div class="container mx-auto flex justify-between items-center">
-      <h1 class="text-xl font-bold">Izuchukwu Foods</h1>
-      <ul class="flex space-x-4">
-        <li><a href="index.html" class="hover:underline">Home</a></li>
-        <li><a href="products.html" class="hover:underline">Products</a></li>
-        <li><a href="about.html" class="hover:underline">About</a></li>
-        <li><a href="blog.html" class="hover:underline">Blog</a></li>
-        <li><a href="chat.html" class="hover:underline">Global Chat</a></li>
-        <li><button id="logoutBtn" class="hover:underline">Logout</button></li>
-      </ul>
-    </div>
-  </nav>  <main class="max-w-2xl mx-auto mt-10 p-6 bg-white rounded shadow">
-    <h2 class="text-2xl font-bold text-green-700 mb-6">Add a New Blog Post</h2>
-    <form id="postForm" class="space-y-4">
-      <input type="text" id="title" placeholder="Post Title" required class="w-full p-3 border rounded" />
-      <textarea id="content" placeholder="Write your post content here..." required class="w-full p-3 border rounded h-40"></textarea>
-      <button type="submit" class="w-full bg-green-700 text-white p-3 rounded hover:bg-green-800">Post</button>
-    </form>
-  </main>  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import {
-      getFirestore,
-      collection,
-      addDoc,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+/**
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
-      authDomain: "izuchukwu-foods.firebaseapp.com",
-      projectId: "izuchukwu-foods",
-      storageBucket: "izuchukwu-foods.firebasestorage.app",
-      messagingSenderId: "811147638426",
-      appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123"
-    };
+add-blog.js - Handles posting new blog articles to Firebase Firestore */
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
 
-    const postForm = document.getElementById("postForm");
-    const logoutBtn = document.getElementById("logoutBtn");
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"; import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // Auth check
-    const username = localStorage.getItem("username");
-    const userId = localStorage.getItem("userId");
+const firebaseConfig = { apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk", authDomain: "izuchukwu-foods.firebaseapp.com", projectId: "izuchukwu-foods", storageBucket: "izuchukwu-foods.firebasestorage.app", messagingSenderId: "811147638426", appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123" };
 
-    if (!username || !userId) {
-      alert("Please log in first.");
-      window.location.href = "blog.html";
-    }
+const app = initializeApp(firebaseConfig); const db = getFirestore(app);
 
-    postForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const title = document.getElementById("title").value.trim();
-      const content = document.getElementById("content").value.trim();
+const postForm = document.getElementById("postForm");
 
-      if (!title || !content) return alert("Please fill in all fields");
+postForm.addEventListener("submit", async (e) => { e.preventDefault(); const title = document.getElementById("title").value.trim(); const content = document.getElementById("content").value.trim(); const author = localStorage.getItem("username") || "Anonymous"; const userId = localStorage.getItem("userId") || Date.now().toString();
 
-      try {
-        await addDoc(collection(db, "posts"), {
-          title,
-          content,
-          author: username,
-          userId,
-          createdAt: serverTimestamp()
-        });
+if (!title || !content) return alert("Please fill in all fields");
 
-        alert("Post added successfully!");
-        postForm.reset();
-        window.location.href = "blog.html";
-      } catch (err) {
-        console.error("Error adding post:", err);
-        alert("Failed to add post. Try again.");
-      }
-    });
+try { await addDoc(collection(db, "posts"), { title, content, author, userId, createdAt: serverTimestamp() });
 
-    logoutBtn.addEventListener("click", () => {
-      localStorage.removeItem("username");
-      localStorage.removeItem("userId");
-      location.reload();
-    });
-  </script></body>
-</html>
+alert("Post added successfully!");
+postForm.reset();
+// Stay on page since this is admin dashboard
+
+} catch (err) { console.error("Error adding post:", err); alert("Failed to add post. Try again."); } });
+
