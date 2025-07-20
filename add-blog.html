@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -12,39 +11,55 @@
     <form id="postForm" class="space-y-4">
       <input type="text" id="title" placeholder="Post Title" required class="w-full p-3 border border-gray-300 rounded" />
       <textarea id="content" rows="6" placeholder="Post Content" required class="w-full p-3 border border-gray-300 rounded"></textarea>
+      <input type="file" id="image" accept="image/*" class="w-full p-3 border border-gray-300 rounded" />
       <button type="submit" class="bg-green-700 text-white px-6 py-3 rounded hover:bg-green-800 w-full">Publish Post</button>
     </form>
-    <p id="status" class="text-center text-sm mt-4 text-gray-600"></p>
-  </div>
+    <p id="status" class="text-center text-sm mt-4 text-gray-600"></p><h2 class="text-xl font-semibold mt-10 mb-4">Existing Posts</h2>
+<div id="postList" class="space-y-4"></div>
 
-  <script type="module">
+  </div>  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
       getFirestore,
       collection,
       addDoc,
-      serverTimestamp
+      getDocs,
+      deleteDoc,
+      doc,
+      serverTimestamp,
+      query,
+      orderBy
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import {
+      getStorage,
+      ref,
+      uploadBytes,
+      getDownloadURL,
+      deleteObject
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
       authDomain: "izuchukwu-foods.firebaseapp.com",
       projectId: "izuchukwu-foods",
-      storageBucket: "izuchukwu-foods.firebasestorage.app",
+      storageBucket: "izuchukwu-foods.appspot.com",
       messagingSenderId: "811147638426",
       appId: "1:811147638426:web:f2403b6cf7e0b6f19b1123"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
+    const storage = getStorage(app);
 
     const postForm = document.getElementById("postForm");
     const status = document.getElementById("status");
+    const postList = document.getElementById("postList");
 
     postForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const title = document.getElementById("title").value.trim();
       const content = document.getElementById("content").value.trim();
+      const imageFile = document.getElementById("image").files[0];
       const author = localStorage.getItem("username") || "Anonymous";
 
       if (!title || !content) {
@@ -52,21 +67,72 @@
         return;
       }
 
+      let imageUrl = "";
       try {
+        if (imageFile) {
+          const imageRef = ref(storage, `blog-images/${Date.now()}-${imageFile.name}`);
+          await uploadBytes(imageRef, imageFile);
+          imageUrl = await getDownloadURL(imageRef);
+        }
+
         await addDoc(collection(db, "posts"), {
           title,
           content,
           author,
+          imageUrl,
           createdAt: serverTimestamp()
         });
 
         status.textContent = "✅ Post added successfully!";
         postForm.reset();
+        loadPosts();
       } catch (err) {
         console.error("Error adding post:", err);
         status.textContent = "❌ Failed to add post. Try again.";
       }
     });
-  </script>
-</body>
+
+    async function loadPosts() {
+      postList.innerHTML = "Loading...";
+      const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+      const snapshot = await getDocs(q);
+      postList.innerHTML = "";
+
+      snapshot.forEach(docSnap => {
+        const post = docSnap.data();
+        const div = document.createElement("div");
+        div.className = "border p-4 rounded shadow-sm bg-white";
+        div.innerHTML = `
+          <h3 class="text-lg font-semibold">${post.title}</h3>
+          <p class="text-sm text-gray-600 mb-2">by ${post.author}</p>
+          ${post.imageUrl ? `<img src="${post.imageUrl}" alt="Image" class="mb-2 w-full max-h-60 object-cover rounded">` : ''}
+          <p class="mb-2">${post.content}</p>
+          <button class="text-red-600 hover:underline" data-id="${docSnap.id}" data-url="${post.imageUrl || ''}">Delete</button>
+        `;
+
+        const deleteBtn = div.querySelector("button");
+        deleteBtn.addEventListener("click", async () => {
+          const confirmDelete = confirm("Are you sure you want to delete this post?");
+          if (!confirmDelete) return;
+
+          await deleteDoc(doc(db, "posts", docSnap.id));
+
+          if (post.imageUrl) {
+            const imageRef = ref(storage, post.imageUrl);
+            try {
+              await deleteObject(imageRef);
+            } catch (err) {
+              console.warn("Failed to delete image:", err.message);
+            }
+          }
+
+          loadPosts();
+        });
+
+        postList.appendChild(div);
+      });
+    }
+
+    loadPosts();
+  </script></body>
 </html>
