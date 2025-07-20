@@ -1,48 +1,29 @@
-<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html><html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Blog Post - Izuchukwu Foods</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 text-gray-800">
-
-  <!-- Navbar -->
-  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
+<body class="bg-gray-100 text-gray-800">  <!-- Navbar -->  <nav class="bg-green-700 text-white px-6 py-4 flex justify-between items-center shadow">
     <a href="index.html" class="text-xl font-bold">Izuchukwu Foods</a>
     <div class="space-x-6 text-sm font-medium">
       <a href="index.html" class="hover:underline">Home</a>
       <a href="blog.html" class="hover:underline">Blog</a>
-      <button id="loginBtn" class="bg-white text-green-700 px-3 py-1 rounded text-sm hover:bg-gray-200">Login</button>
-      <button id="logoutBtn" class="hidden bg-white text-red-600 px-3 py-1 rounded text-sm hover:bg-gray-200">Logout</button>
     </div>
-  </nav>
-
-  <!-- Blog Post Content -->
-  <div class="max-w-4xl mx-auto px-4 py-8" id="post-container"></div>
-
-  <!-- Comments Section -->
-  <div class="max-w-4xl mx-auto px-4 py-8">
+  </nav>  <!-- Blog Post Content -->  <div class="max-w-4xl mx-auto px-4 py-8" id="post-container"></div>  <!-- Comments Section -->  <div class="max-w-4xl mx-auto px-4 py-8">
     <h2 class="text-2xl font-bold mb-4">Comments</h2>
     <div id="comment-form" class="mb-6">
       <textarea id="comment-input" placeholder="Write a comment..." class="w-full p-3 border rounded mb-2"></textarea>
       <button id="submit-comment" class="bg-green-600 text-white px-4 py-2 rounded">Post Comment</button>
     </div>
     <div id="comments-container" class="space-y-6"></div>
-  </div>
-
-  <!-- Firebase Setup -->
-  <script type="module">
+  </div>  <!-- Firebase Setup -->  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import {
       getFirestore, doc, getDoc, collection,
       addDoc, getDocs, updateDoc, deleteDoc, onSnapshot, serverTimestamp
     } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-    import {
-      getAuth, GoogleAuthProvider, signInWithPopup,
-      signOut, onAuthStateChanged
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyAx0q_QGU35tLFP4MtUMQQUtw-WVNagpHk",
@@ -55,8 +36,6 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const auth = getAuth(app);
-    const provider = new GoogleAuthProvider();
 
     const postId = new URLSearchParams(window.location.search).get("id");
     const postContainer = document.getElementById("post-container");
@@ -64,25 +43,7 @@
     const submitCommentBtn = document.getElementById("submit-comment");
     const commentsContainer = document.getElementById("comments-container");
 
-    const loginBtn = document.getElementById("loginBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-
-    let currentUser = null;
     const adminEmail = "youremail@example.com"; // Replace with your admin email
-
-    onAuthStateChanged(auth, (user) => {
-      currentUser = user;
-      if (user) {
-        loginBtn.classList.add("hidden");
-        logoutBtn.classList.remove("hidden");
-      } else {
-        loginBtn.classList.remove("hidden");
-        logoutBtn.classList.add("hidden");
-      }
-    });
-
-    loginBtn.onclick = () => signInWithPopup(auth, provider);
-    logoutBtn.onclick = () => signOut(auth);
 
     async function loadPost() {
       const postRef = doc(db, "posts", postId);
@@ -94,12 +55,6 @@
             <h1 class="text-3xl font-bold">${post.title}</h1>
             <p class="text-gray-500 text-sm mb-4">${new Date(post.timestamp?.seconds * 1000).toLocaleString()}</p>
             <p class="text-lg">${post.content}</p>
-            ${currentUser?.email === adminEmail ? `
-              <div class="mt-4 space-x-2">
-                <button onclick="editPost('${postId}')" class="text-blue-600 text-sm">Edit</button>
-                <button onclick="deletePost('${postId}')" class="text-red-600 text-sm">Delete</button>
-              </div>` : ""
-            }
           </div>`;
         postContainer.innerHTML = html;
       } else {
@@ -107,28 +62,11 @@
       }
     }
 
-    window.editPost = (id) => {
-      const newContent = prompt("Edit post content:");
-      if (newContent) {
-        updateDoc(doc(db, "posts", id), { content: newContent });
-      }
-    };
-
-    window.deletePost = async (id) => {
-      if (confirm("Delete this post?")) {
-        await deleteDoc(doc(db, "posts", id));
-        window.location.href = "blog.html";
-      }
-    };
-
     async function postComment() {
       const content = commentInput.value.trim();
-      if (!content || !currentUser) return;
+      if (!content) return;
       await addDoc(collection(db, "posts", postId, "comments"), {
         content,
-        user: currentUser.displayName,
-        uid: currentUser.uid,
-        email: currentUser.email,
         timestamp: serverTimestamp(),
         likes: 0
       });
@@ -146,16 +84,14 @@
 
     async function replyToComment(commentId) {
       const reply = prompt("Reply to comment:");
-      if (!reply || !currentUser) return;
+      if (!reply) return;
       await addDoc(collection(db, "posts", postId, "comments", commentId, "replies"), {
         content: reply,
-        user: currentUser.displayName,
         timestamp: serverTimestamp()
       });
     }
 
     async function deleteComment(commentId) {
-      if (!currentUser || currentUser.email !== adminEmail) return;
       if (confirm("Delete this comment?")) {
         await deleteDoc(doc(db, "posts", postId, "comments", commentId));
       }
@@ -181,22 +117,20 @@
           const repliesHTML = repliesSnap.docs.map(replyDoc => {
             const reply = replyDoc.data();
             return `<div class="ml-6 mt-2 text-sm bg-gray-50 p-2 rounded">
-              <p><strong>${reply.user}</strong>: ${reply.content}</p>
+              <p>${reply.content}</p>
               <p class="text-xs text-gray-400">${new Date(reply.timestamp?.seconds * 1000).toLocaleString()}</p>
             </div>`;
           }).join("");
 
           commentsContainer.innerHTML += `
             <div class="bg-white p-4 rounded shadow-sm">
-              <p><strong>${comment.user}</strong>: ${comment.content}</p>
+              <p>${comment.content}</p>
               <div class="text-xs text-gray-500">${new Date(comment.timestamp?.seconds * 1000).toLocaleString()}</div>
               <div class="mt-2 space-x-3">
                 <button onclick="likeComment('${docSnap.id}')" class="text-green-700 text-sm">❤️ ${comment.likes || 0}</button>
                 <button onclick="replyToComment('${docSnap.id}')" class="text-blue-700 text-sm">Reply</button>
-                ${currentUser?.email === adminEmail ? `
-                  <button onclick="editComment('${docSnap.id}')" class="text-yellow-600 text-sm">Edit</button>
-                  <button onclick="deleteComment('${docSnap.id}')" class="text-red-600 text-sm">Delete</button>
-                ` : ""}
+                <button onclick="editComment('${docSnap.id}')" class="text-yellow-600 text-sm">Edit</button>
+                <button onclick="deleteComment('${docSnap.id}')" class="text-red-600 text-sm">Delete</button>
               </div>
               ${repliesHTML}
             </div>`;
@@ -208,6 +142,5 @@
 
     loadPost();
     renderComments();
-  </script>
-</body>
+  </script></body>
 </html>
