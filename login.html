@@ -5,17 +5,18 @@
   <title>Login - Izuchukwu Foods</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-50 flex items-center justify-center min-h-screen">  <div class="bg-white p-8 rounded shadow-lg w-full max-w-md">
-    <h2 class="text-2xl font-bold mb-6 text-center text-green-700">Login to Your Account</h2><form id="loginForm" class="space-y-4">
-  <input type="text" id="username" placeholder="Your name" required class="w-full p-3 border rounded"/>
-  <input type="password" id="password" placeholder="Password" required class="w-full p-3 border rounded"/>
-  <button type="submit" class="w-full bg-green-700 text-white p-3 rounded hover:bg-green-800">Login</button>
-</form>
-
-<p class="text-sm text-center mt-4">Don’t have an account?
-  <a href="signup.html" class="text-green-600 hover:underline">Sign up</a>
-</p>
-
+<body class="bg-gray-50 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-8 rounded shadow-lg w-full max-w-md">
+    <h2 class="text-2xl font-bold mb-6 text-center text-green-700">Login to Your Account</h2>
+    <form id="loginForm" class="space-y-4">
+      <input type="text" id="username" placeholder="Your name" required class="w-full p-3 border rounded" />
+      <input type="password" id="password" placeholder="Password" required class="w-full p-3 border rounded" />
+      <button type="submit" class="w-full bg-green-700 text-white p-3 rounded hover:bg-green-800">Login</button>
+    </form>
+    <p class="text-sm text-center mt-4">
+      Don’t have an account?
+      <a href="signup.html" class="text-green-600 hover:underline">Sign up</a>
+    </p>
   </div>  <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
     import { getFirestore, collection, getDocs, query, where } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
@@ -48,7 +49,14 @@
         if (username.toLowerCase() === "admin") {
           window.location.href = "admin.html";
         } else {
-          window.location.href = "index.html";
+          const referrer = document.referrer;
+          if (referrer.includes("blog.html")) {
+            window.location.href = "blog.html";
+          } else if (referrer.includes("chat.html")) {
+            window.location.href = "chat.html";
+          } else {
+            window.location.href = "blog.html"; // Default page
+          }
         }
       } else {
         alert("Invalid username or password.");
